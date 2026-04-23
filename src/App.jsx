@@ -11,7 +11,12 @@ import UserNotifications from './pages/user/UserNotifications'
 import UserProfile from './pages/user/UserProfile'
 
 import SatpamDashboard from './pages/satpam/SatpamDashboard'
+
 import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminLaporan from './pages/admin/AdminLaporan'
+import AdminZona from './pages/admin/AdminZona'
+import AdminSatpam from './pages/admin/AdminSatpam'
+import AdminPengaturan from './pages/admin/AdminPengaturan'
 
 function RedirectByRole({ user }) {
   if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />
@@ -38,7 +43,7 @@ function App() {
       <Route path="/login" element={user ? <RedirectByRole user={user} /> : <LoginPage />} />
       <Route path="/register" element={user ? <RedirectByRole user={user} /> : <RegisterPage />} />
 
-      {/* User routes */}
+      {/* User */}
       <Route path="/user/*" element={
         <ProtectedRoute allowedRoles={['user']}>
           <Routes>
@@ -50,7 +55,7 @@ function App() {
         </ProtectedRoute>
       } />
 
-      {/* Satpam routes */}
+      {/* Satpam */}
       <Route path="/satpam/*" element={
         <ProtectedRoute allowedRoles={['satpam']}>
           <Routes>
@@ -59,11 +64,15 @@ function App() {
         </ProtectedRoute>
       } />
 
-      {/* Admin routes */}
+      {/* Admin */}
       <Route path="/admin/*" element={
         <ProtectedRoute allowedRoles={['admin']}>
           <Routes>
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="laporan" element={<AdminLaporan />} />
+            <Route path="zona" element={<AdminZona />} />
+            <Route path="satpam" element={<AdminSatpam />} />
+            <Route path="pengaturan" element={<AdminPengaturan />} />
           </Routes>
         </ProtectedRoute>
       } />
