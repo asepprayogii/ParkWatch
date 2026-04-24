@@ -1,31 +1,34 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { useAuth } from './store/AuthContext'
-import ProtectedRoute from './components/layout/ProtectedRoute'
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./store/AuthContext";
+import ProtectedRoute from "./components/layout/ProtectedRoute";
 
-import LoginPage from './pages/auth/LoginPage'
-import RegisterPage from './pages/auth/RegisterPage'
+import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
 
-import UserFeed from './pages/user/UserFeed'
-import UserUpload from './pages/user/UserUpload'
-import UserNotifications from './pages/user/UserNotifications'
-import UserProfile from './pages/user/UserProfile'
+import UserFeed from "./pages/user/UserFeed";
+import UserUpload from "./pages/user/UserUpload";
+import UserNotifications from "./pages/user/UserNotifications";
+import UserProfile from "./pages/user/UserProfile";
 
-import SatpamDashboard from './pages/satpam/SatpamDashboard'
+import SatpamDashboard from "./pages/satpam/SatpamDashboard";
+import SatpamJadwal from "./pages/satpam/SatpamJadwal";
+import SatpamRiwayat from "./pages/satpam/SatpamRiwayat";
 
-import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminLaporan from './pages/admin/AdminLaporan'
-import AdminZona from './pages/admin/AdminZona'
-import AdminSatpam from './pages/admin/AdminSatpam'
-import AdminPengaturan from './pages/admin/AdminPengaturan'
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLaporan from "./pages/admin/AdminLaporan";
+import AdminZona from "./pages/admin/AdminZona";
+import AdminSatpam from "./pages/admin/AdminSatpam";
+import AdminPengaturan from "./pages/admin/AdminPengaturan";
+import AdminRoster from "./pages/admin/AdminRoster";
 
 function RedirectByRole({ user }) {
-  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />
-  if (user.role === 'satpam') return <Navigate to="/satpam/dashboard" replace />
-  return <Navigate to="/user/feed" replace />
+  if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
+  if (user.role === "satpam") return <Navigate to="/satpam/dashboard" replace />;
+  return <Navigate to="/user/feed" replace />;
 }
 
 function App() {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -35,7 +38,7 @@ function App() {
           <p className="text-sm text-slate-500">Memuat...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -44,43 +47,55 @@ function App() {
       <Route path="/register" element={user ? <RedirectByRole user={user} /> : <RegisterPage />} />
 
       {/* User */}
-      <Route path="/user/*" element={
-        <ProtectedRoute allowedRoles={['user']}>
-          <Routes>
-            <Route path="feed" element={<UserFeed />} />
-            <Route path="upload" element={<UserUpload />} />
-            <Route path="notifications" element={<UserNotifications />} />
-            <Route path="profile" element={<UserProfile />} />
-          </Routes>
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/user/*"
+        element={
+          <ProtectedRoute allowedRoles={["user"]}>
+            <Routes>
+              <Route path="feed" element={<UserFeed />} />
+              <Route path="upload" element={<UserUpload />} />
+              <Route path="notifications" element={<UserNotifications />} />
+              <Route path="profile" element={<UserProfile />} />
+            </Routes>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Satpam */}
-      <Route path="/satpam/*" element={
-        <ProtectedRoute allowedRoles={['satpam']}>
-          <Routes>
-            <Route path="dashboard" element={<SatpamDashboard />} />
-          </Routes>
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/satpam/*"
+        element={
+          <ProtectedRoute allowedRoles={["satpam"]}>
+            <Routes>
+              <Route path="dashboard" element={<SatpamDashboard />} />
+              <Route path="jadwal" element={<SatpamJadwal />} />
+              <Route path="riwayat" element={<SatpamRiwayat />} />
+            </Routes>
+          </ProtectedRoute>
+        }
+      />
 
       {/* Admin */}
-      <Route path="/admin/*" element={
-        <ProtectedRoute allowedRoles={['admin']}>
-          <Routes>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="laporan" element={<AdminLaporan />} />
-            <Route path="zona" element={<AdminZona />} />
-            <Route path="satpam" element={<AdminSatpam />} />
-            <Route path="pengaturan" element={<AdminPengaturan />} />
-          </Routes>
-        </ProtectedRoute>
-      } />
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <Routes>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="laporan" element={<AdminLaporan />} />
+              <Route path="zona" element={<AdminZona />} />
+              <Route path="satpam" element={<AdminSatpam />} />
+              <Route path="pengaturan" element={<AdminPengaturan />} />
+              <Route path="roster" element={<AdminRoster />} />
+            </Routes>
+          </ProtectedRoute>
+        }
+      />
 
       <Route path="/" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
       <Route path="*" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
     </Routes>
-  )
+  );
 }
 
-export default App
+export default App;
