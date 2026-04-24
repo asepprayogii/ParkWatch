@@ -36,3 +36,57 @@ export async function getUnreadCount(userId) {
   if (error) throw error
   return count ?? 0
 }
+
+export async function sendNotificationToUser({ userId, reportId, plateNumber, status }) {
+  const messages = {
+    in_progress: `Laporan parkir liar plat ${plateNumber} sedang ditangani oleh petugas`,
+    resolved: `Laporan parkir liar plat ${plateNumber} telah berhasil diselesaikan`,
+  }
+  const message = messages[status]
+  if (!message) return
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      user_id: userId,
+      type: 'action_update',
+      related_report_id: reportId,
+      message,
+      is_read: false,
+    })
+  if (error) throw error
+}
+
+export async function sendNotificationToSatpam({ zoneId, reportId, plateNumber }) {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+
+    const { data: roster, error } = await supabase
+      .from('roster')
+      .select('satpam_id')
+      .eq('zone_id', zoneId)
+      .eq('date', today)
+      .eq('is_active', true)
+
+    if (error) throw error
+    if (!roster || roster.length === 0) return
+
+    // Deduplikasi satpam_id
+    const uniqueSatpamIds = [...new Set(roster.map(r => r.satpam_id))]
+
+    const notifications = uniqueSatpamIds.map(satpamId => ({
+      user_id: satpamId,
+      type: 'new_report',
+      related_report_id: reportId,
+      message: `Laporan baru parkir liar plat ${plateNumber} di zona kamu`,
+      is_read: false,
+    }))
+
+    const { error: insertError } = await supabase
+      .from('notifications')
+      .insert(notifications)
+    if (insertError) throw insertError
+  } catch (err) {
+    console.error('sendNotificationToSatpam error:', err)
+  }
+}

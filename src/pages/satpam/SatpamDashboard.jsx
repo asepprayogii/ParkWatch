@@ -1,115 +1,97 @@
-import { useEffect, useState, useCallback } from 'react'
-import { useAuth } from '../../store/AuthContext'
-import { supabase } from '../../lib/supabase'
-import SatpamLayout from '../../components/layout/SatpamLayout'
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "../../store/AuthContext";
+import { supabase } from "../../lib/supabase";
+import SatpamLayout from "../../components/layout/SatpamLayout";
+import { sendNotificationToUser } from '../../services/notifications'
 
 const statusConfig = {
-  pending: { label: 'Menunggu', color: 'bg-yellow-50 text-yellow-600 border-yellow-200' },
-  in_progress: { label: 'Diproses', color: 'bg-blue-50 text-blue-600 border-blue-200' },
-  resolved: { label: 'Selesai', color: 'bg-green-50 text-green-600 border-green-200' },
-}
+  pending: { label: "Menunggu", color: "bg-yellow-50 text-yellow-600 border-yellow-200" },
+  in_progress: { label: "Diproses", color: "bg-blue-50 text-blue-600 border-blue-200" },
+  resolved: { label: "Selesai", color: "bg-green-50 text-green-600 border-green-200" },
+};
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
-  if (diff < 60) return `${diff} dtk lalu`
-  if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`
-  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`
-  return `${Math.floor(diff / 86400)} hari lalu`
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff} dtk lalu`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+  return `${Math.floor(diff / 86400)} hari lalu`;
 }
 
 export default function SatpamDashboard() {
-  const { user } = useAuth()
-  const [reports, setReports] = useState([])
-  const [todayRoster, setTodayRoster] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [updating, setUpdating] = useState(null)
+  const { user } = useAuth();
+  const [reports, setReports] = useState([]);
+  const [todayRoster, setTodayRoster] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(null);
 
   const fetchData = useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
+      const today = new Date().toISOString().split("T")[0];
 
       // Ambil roster hari ini untuk satpam ini
-      const { data: roster } = await supabase
-        .from('roster')
-        .select('*, zones(id, name)')
-        .eq('satpam_id', user.id)
-        .eq('date', today)
-        .eq('is_active', true)
-        .single()
+      const { data: roster } = await supabase.from("roster").select("*, zones(id, name)").eq("satpam_id", user.id).eq("date", today).eq("is_active", true).single();
 
-      setTodayRoster(roster ?? null)
+      setTodayRoster(roster ?? null);
 
       if (roster?.zone_id) {
         // Ambil laporan di zona tugasnya
-        const { data: reportsData } = await supabase
-          .from('reports')
-          .select('*, users(full_name), zones(name)')
-          .eq('zone_id', roster.zone_id)
-          .neq('status', 'resolved')
-          .order('created_at', { ascending: false })
+        const { data: reportsData } = await supabase.from("reports").select("*, user_id, users(full_name), zones(name)").eq("zone_id", roster.zone_id).neq("status", "resolved").order("created_at", { ascending: false });
 
-        setReports(reportsData ?? [])
+        setReports(reportsData ?? []);
       } else {
-        setReports([])
+        setReports([]);
       }
     } catch (err) {
-      console.error(err)
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [user.id])
-
-  useEffect(() => { fetchData() }, [fetchData])
+  }, [user.id]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel('satpam-reports')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'reports' }, fetchData)
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [fetchData])
+    fetchData();
+  }, [fetchData]);
+
+  useEffect(() => {
+    const channel = supabase.channel("satpam-reports").on("postgres_changes", { event: "*", schema: "public", table: "reports" }, fetchData).subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [fetchData]);
 
   const handleUpdateStatus = async (reportId, newStatus) => {
-    setUpdating(reportId)
+    setUpdating(reportId);
     try {
-      const { error } = await supabase
-        .from('reports')
-        .update({ status: newStatus })
-        .eq('id', reportId)
-      if (error) throw error
+      const { error } = await supabase.from("reports").update({ status: newStatus }).eq("id", reportId);
+      if (error) throw error;
 
-      // Kirim notifikasi ke pelapor
-      const report = reports.find(r => r.id === reportId)
-      if (report) {
-        await supabase.from('notifications').insert({
-          user_id: report.user_id,
-          type: 'action_update',
-          related_report_id: reportId,
-          message: newStatus === 'in_progress'
-            ? `Laporan plat ${report.plate_number} sedang ditangani satpam`
-            : `Laporan plat ${report.plate_number} telah diselesaikan`,
-        })
+      const report = reports.find((r) => r.id === reportId);
+      console.log("report user_id:", report?.user_id); // debug
+
+      if (report?.user_id) {
+        await sendNotificationToUser({
+          userId: report.user_id,
+          reportId,
+          plateNumber: report.plate_number,
+          status: newStatus,
+        });
       }
-      fetchData()
+      fetchData();
     } catch (err) {
-      console.error(err)
+      console.error("handleUpdateStatus error:", err);
     } finally {
-      setUpdating(null)
+      setUpdating(null);
     }
-  }
+  };
 
   return (
     <SatpamLayout title="Laporan Masuk">
       <div className="py-3">
-
         {/* Info Shift Hari Ini */}
         {todayRoster ? (
           <div className="bg-green-600 rounded-2xl p-4 mb-4 text-white">
             <p className="text-green-100 text-xs font-medium mb-1">Shift Hari Ini</p>
             <p className="font-bold text-lg">{todayRoster.zones?.name}</p>
-            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full capitalize">
-              Shift {todayRoster.shift}
-            </span>
+            <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full capitalize">Shift {todayRoster.shift}</span>
           </div>
         ) : (
           <div className="bg-slate-100 rounded-2xl p-4 mb-4">
@@ -118,13 +100,13 @@ export default function SatpamDashboard() {
         )}
 
         {/* Laporan */}
-        <h2 className="font-semibold text-slate-700 text-sm mb-3">
-          Laporan di Zona Kamu {reports.length > 0 && <span className="text-blue-600">({reports.length})</span>}
-        </h2>
+        <h2 className="font-semibold text-slate-700 text-sm mb-3">Laporan di Zona Kamu {reports.length > 0 && <span className="text-blue-600">({reports.length})</span>}</h2>
 
         {loading ? (
           <div className="flex flex-col gap-3">
-            {[1,2,3].map(i => <div key={i} className="h-36 bg-white rounded-2xl border border-slate-200 animate-pulse" />)}
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-36 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+            ))}
           </div>
         ) : !todayRoster ? (
           <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
@@ -148,24 +130,18 @@ export default function SatpamDashboard() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {reports.map(report => {
-              const status = statusConfig[report.status] ?? statusConfig.pending
+            {reports.map((report) => {
+              const status = statusConfig[report.status] ?? statusConfig.pending;
               return (
                 <div key={report.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-                  {report.photo_url && (
-                    <img src={report.photo_url} alt="laporan" className="w-full h-40 object-cover" />
-                  )}
+                  {report.photo_url && <img src={report.photo_url} alt="laporan" className="w-full h-40 object-cover" />}
                   <div className="p-4">
                     {/* Plat + Status */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg">
-                        <span className="font-mono font-bold tracking-widest text-sm">
-                          {report.plate_number ?? '?????'}
-                        </span>
+                        <span className="font-mono font-bold tracking-widest text-sm">{report.plate_number ?? "?????"}</span>
                       </div>
-                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${status.color}`}>
-                        {status.label}
-                      </span>
+                      <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${status.color}`}>{status.label}</span>
                     </div>
 
                     {/* Zona & Waktu */}
@@ -179,38 +155,36 @@ export default function SatpamDashboard() {
                       <span className="text-xs text-slate-400">{timeAgo(report.created_at)}</span>
                     </div>
 
-                    {report.description && (
-                      <p className="text-xs text-slate-500 mb-3 line-clamp-2">{report.description}</p>
-                    )}
+                    {report.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{report.description}</p>}
 
                     {/* Action Buttons */}
                     <div className="flex gap-2 pt-2 border-t border-slate-100">
-                      {report.status === 'pending' && (
+                      {report.status === "pending" && (
                         <button
-                          onClick={() => handleUpdateStatus(report.id, 'in_progress')}
+                          onClick={() => handleUpdateStatus(report.id, "in_progress")}
                           disabled={updating === report.id}
                           className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-2.5 rounded-xl transition disabled:opacity-50"
                         >
-                          {updating === report.id ? 'Memproses...' : 'Tangani Sekarang'}
+                          {updating === report.id ? "Memproses..." : "Tangani Sekarang"}
                         </button>
                       )}
-                      {report.status === 'in_progress' && (
+                      {report.status === "in_progress" && (
                         <button
-                          onClick={() => handleUpdateStatus(report.id, 'resolved')}
+                          onClick={() => handleUpdateStatus(report.id, "resolved")}
                           disabled={updating === report.id}
                           className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2.5 rounded-xl transition disabled:opacity-50"
                         >
-                          {updating === report.id ? 'Memproses...' : 'Tandai Selesai'}
+                          {updating === report.id ? "Memproses..." : "Tandai Selesai"}
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
-              )
+              );
             })}
           </div>
         )}
       </div>
     </SatpamLayout>
-  )
+  );
 }

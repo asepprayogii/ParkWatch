@@ -13,6 +13,7 @@ import UserProfile from "./pages/user/UserProfile";
 import SatpamDashboard from "./pages/satpam/SatpamDashboard";
 import SatpamJadwal from "./pages/satpam/SatpamJadwal";
 import SatpamRiwayat from "./pages/satpam/SatpamRiwayat";
+import SatpamNotifikasi from "./pages/satpam/SatpamNotifikasi";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminLaporan from "./pages/admin/AdminLaporan";
@@ -70,6 +71,7 @@ function App() {
               <Route path="dashboard" element={<SatpamDashboard />} />
               <Route path="jadwal" element={<SatpamJadwal />} />
               <Route path="riwayat" element={<SatpamRiwayat />} />
+              <Route path="notifikasi" element={<SatpamNotifikasi />} />
             </Routes>
           </ProtectedRoute>
         }
