@@ -1,7 +1,32 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../../store/AuthContext'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
+import { useLocation } from 'react-router-dom'
+
+// Buat komponen helper kecil
+function PageTransition({ children }) {
+  const location = useLocation()
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    setVisible(false)
+    const t = setTimeout(() => setVisible(true), 30)
+    return () => clearTimeout(t)
+  }, [location.pathname])
+
+  return (
+    <div
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(8px)',
+        transition: 'opacity 0.28s cubic-bezier(.4,0,.2,1), transform 0.28s cubic-bezier(.4,0,.2,1)',
+      }}
+    >
+      {children}
+    </div>
+  )
+}
 
 export default function AdminPengaturan() {
   const { user, setUser } = useAuth()
@@ -117,147 +142,149 @@ export default function AdminPengaturan() {
 
   return (
     <AdminLayout title="Pengaturan">
-      <div className="max-w-2xl space-y-5">
+      <PageTransition>
+        <div className="max-w-2xl space-y-5">
 
-        {/* ── Profil Admin ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="font-bold text-slate-800 mb-4">Profil Admin</h3>
+          {/* ── Profil Admin ── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 className="font-bold text-slate-800 mb-4">Profil Admin</h3>
 
-          {/* Avatar */}
-          <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center overflow-hidden shadow">
-                {user?.avatar_url ? (
-                  <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl font-bold text-white">
-                    {user?.full_name?.charAt(0).toUpperCase() ?? 'A'}
-                  </span>
-                )}
+            {/* Avatar */}
+            <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center overflow-hidden shadow">
+                  {user?.avatar_url ? (
+                    <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-white">
+                      {(user?.full_name?.charAt(0) || 'A').toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <button onClick={() => avatarRef.current.click()} disabled={avatarLoading}
+                  className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow border-2 border-white">
+                  {avatarLoading ? (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  )}
+                </button>
+                <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
               </div>
-              <button onClick={() => avatarRef.current.click()} disabled={avatarLoading}
-                className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow border-2 border-white">
-                {avatarLoading ? (
-                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                )}
+              <div>
+                <p className="font-semibold text-slate-800">{user?.full_name}</p>
+                <p className="text-sm text-slate-400">{user?.email}</p>
+                <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full mt-1 inline-block">Admin</span>
+              </div>
+            </div>
+
+            {profileSuccess && (
+              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{profileSuccess}</div>
+            )}
+            {profileError && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{profileError}</div>
+            )}
+
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
+                <input type="text" value={profileForm.full_name}
+                  onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">No. WhatsApp</label>
+                <input type="tel" value={profileForm.phone}
+                  onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
+                  placeholder="08xxxxxxxxxx"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <button type="submit" disabled={profileLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
+                {profileLoading ? 'Menyimpan...' : 'Simpan Profil'}
               </button>
-              <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-            </div>
-            <div>
-              <p className="font-semibold text-slate-800">{user?.full_name}</p>
-              <p className="text-sm text-slate-400">{user?.email}</p>
-              <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full mt-1 inline-block">Admin</span>
-            </div>
+            </form>
           </div>
 
-          {profileSuccess && (
-            <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{profileSuccess}</div>
-          )}
-          {profileError && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{profileError}</div>
-          )}
+          {/* ── Ganti Password ── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 className="font-bold text-slate-800 mb-4">Ganti Password</h3>
 
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
-              <input type="text" value={profileForm.full_name}
-                onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">No. WhatsApp</label>
-              <input type="tel" value={profileForm.phone}
-                onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
-                placeholder="08xxxxxxxxxx"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <button type="submit" disabled={profileLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
-              {profileLoading ? 'Menyimpan...' : 'Simpan Profil'}
-            </button>
-          </form>
+            {passwordSuccess && (
+              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{passwordSuccess}</div>
+            )}
+            {passwordError && (
+              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{passwordError}</div>
+            )}
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Password Baru</label>
+                <input type="password" value={passwordForm.new_password}
+                  onChange={e => { setPasswordForm({ ...passwordForm, new_password: e.target.value }); setPasswordError('') }}
+                  placeholder="Minimal 6 karakter"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Konfirmasi Password Baru</label>
+                <input type="password" value={passwordForm.confirm_password}
+                  onChange={e => { setPasswordForm({ ...passwordForm, confirm_password: e.target.value }); setPasswordError('') }}
+                  placeholder="Ulangi password baru"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <button type="submit" disabled={passwordLoading}
+                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
+                {passwordLoading ? 'Mengubah...' : 'Ubah Password'}
+              </button>
+            </form>
+          </div>
+
+          {/* ── Informasi Aplikasi ── */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <h3 className="font-bold text-slate-800 mb-1">Informasi Aplikasi</h3>
+            <p className="text-xs text-slate-400 mb-4">Ditampilkan di halaman login dan beranda</p>
+
+            {appSuccess && (
+              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">
+                Informasi aplikasi berhasil disimpan
+              </div>
+            )}
+
+            <form onSubmit={handleSaveApp} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Nama Aplikasi / Tempat</label>
+                <input type="text" value={appForm.app_name}
+                  onChange={e => setAppForm({ ...appForm, app_name: e.target.value })}
+                  placeholder="contoh: ParkWatch Kampus ABC"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Lokasi</label>
+                <input type="text" value={appForm.app_location}
+                  onChange={e => setAppForm({ ...appForm, app_location: e.target.value })}
+                  placeholder="contoh: Universitas XYZ, Bandung"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-600 mb-1">Deskripsi Singkat</label>
+                <textarea value={appForm.app_description}
+                  onChange={e => setAppForm({ ...appForm, app_description: e.target.value })}
+                  placeholder="contoh: Platform pelaporan parkir liar berbasis komunitas"
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm" />
+              </div>
+              <button type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm">
+                Simpan Informasi
+              </button>
+            </form>
+          </div>
+
         </div>
-
-        {/* ── Ganti Password ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="font-bold text-slate-800 mb-4">Ganti Password</h3>
-
-          {passwordSuccess && (
-            <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{passwordSuccess}</div>
-          )}
-          {passwordError && (
-            <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{passwordError}</div>
-          )}
-
-          <form onSubmit={handleChangePassword} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Password Baru</label>
-              <input type="password" value={passwordForm.new_password}
-                onChange={e => { setPasswordForm({ ...passwordForm, new_password: e.target.value }); setPasswordError('') }}
-                placeholder="Minimal 6 karakter"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Konfirmasi Password Baru</label>
-              <input type="password" value={passwordForm.confirm_password}
-                onChange={e => { setPasswordForm({ ...passwordForm, confirm_password: e.target.value }); setPasswordError('') }}
-                placeholder="Ulangi password baru"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <button type="submit" disabled={passwordLoading}
-              className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
-              {passwordLoading ? 'Mengubah...' : 'Ubah Password'}
-            </button>
-          </form>
-        </div>
-
-        {/* ── Informasi Aplikasi ── */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h3 className="font-bold text-slate-800 mb-1">Informasi Aplikasi</h3>
-          <p className="text-xs text-slate-400 mb-4">Ditampilkan di halaman login dan beranda</p>
-
-          {appSuccess && (
-            <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">
-              Informasi aplikasi berhasil disimpan
-            </div>
-          )}
-
-          <form onSubmit={handleSaveApp} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Nama Aplikasi / Tempat</label>
-              <input type="text" value={appForm.app_name}
-                onChange={e => setAppForm({ ...appForm, app_name: e.target.value })}
-                placeholder="contoh: ParkWatch Kampus ABC"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Lokasi</label>
-              <input type="text" value={appForm.app_location}
-                onChange={e => setAppForm({ ...appForm, app_location: e.target.value })}
-                placeholder="contoh: Universitas XYZ, Bandung"
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Deskripsi Singkat</label>
-              <textarea value={appForm.app_description}
-                onChange={e => setAppForm({ ...appForm, app_description: e.target.value })}
-                placeholder="contoh: Platform pelaporan parkir liar berbasis komunitas"
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm" />
-            </div>
-            <button type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm">
-              Simpan Informasi
-            </button>
-          </form>
-        </div>
-
-      </div>
+      </PageTransition>
     </AdminLayout>
   )
 }
