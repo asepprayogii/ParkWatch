@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { logout } from '../../services/auth'
 import { useAuth } from '../../store/AuthContext'
+import { getUnreadCount } from '../../services/notifications'
+import { supabase } from '../../lib/supabase'
 
 const navItems = [
   {
@@ -24,8 +26,18 @@ const navItems = [
     ),
   },
   {
+    to: '/user/riwayat',
+    label: 'Riwayat',
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    ),
+  },
+  {
     to: '/user/notifications',
     label: 'Notifikasi',
+    hasNotifBadge: true,
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -47,6 +59,20 @@ export default function Sidebar({ onCollapse }) {
   const [collapsed, setCollapsed] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuth()
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    getUnreadCount(user.id).then(setUnread)
+    const channel = supabase
+      .channel('sidebar-notif')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, () => getUnreadCount(user.id).then(setUnread))
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [user])
 
   const handleToggle = () => {
     const next = !collapsed
@@ -77,6 +103,7 @@ export default function Sidebar({ onCollapse }) {
         <button
           onClick={handleToggle}
           className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 transition"
+          title={collapsed ? 'Expand' : 'Collapse'}
         >
           {collapsed ? (
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -115,7 +142,7 @@ export default function Sidebar({ onCollapse }) {
             to={item.to}
             title={collapsed ? item.label : ''}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-2 py-2.5 rounded-xl transition text-sm font-medium
+              `flex items-center gap-3 px-2 py-2.5 rounded-xl transition text-sm font-medium relative
               ${collapsed ? 'justify-center' : ''}
               ${isActive
                 ? 'bg-blue-50 text-blue-600'
@@ -123,7 +150,16 @@ export default function Sidebar({ onCollapse }) {
               }`
             }
           >
-            {item.icon}
+            <div className="relative">
+              {item.icon}
+              {item.hasNotifBadge && unread > 0 && (
+                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-white font-bold" style={{ fontSize: '7px' }}>
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                </div>
+              )}
+            </div>
             {!collapsed && <span>{item.label}</span>}
           </NavLink>
         ))}

@@ -4,11 +4,13 @@ import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 import LoginPage from "./pages/auth/LoginPage";
 import RegisterPage from "./pages/auth/RegisterPage";
+import NotFoundPage from "./pages/NotFoundPage";
 
 import UserFeed from "./pages/user/UserFeed";
 import UserUpload from "./pages/user/UserUpload";
 import UserNotifications from "./pages/user/UserNotifications";
 import UserProfile from "./pages/user/UserProfile";
+import UserRiwayat from './pages/user/UserRiwayat'
 
 import SatpamDashboard from "./pages/satpam/SatpamDashboard";
 import SatpamJadwal from "./pages/satpam/SatpamJadwal";
@@ -21,6 +23,7 @@ import AdminZona from "./pages/admin/AdminZona";
 import AdminSatpam from "./pages/admin/AdminSatpam";
 import AdminPengaturan from "./pages/admin/AdminPengaturan";
 import AdminRoster from "./pages/admin/AdminRoster";
+import AdminAnalitik from "./pages/admin/AdminAnalitik";
 
 function RedirectByRole({ user }) {
   if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
@@ -57,6 +60,8 @@ function App() {
               <Route path="upload" element={<UserUpload />} />
               <Route path="notifications" element={<UserNotifications />} />
               <Route path="profile" element={<UserProfile />} />
+              <Route path="riwayat" element={<UserRiwayat />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ProtectedRoute>
         }
@@ -72,6 +77,7 @@ function App() {
               <Route path="jadwal" element={<SatpamJadwal />} />
               <Route path="riwayat" element={<SatpamRiwayat />} />
               <Route path="notifikasi" element={<SatpamNotifikasi />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ProtectedRoute>
         }
@@ -89,13 +95,15 @@ function App() {
               <Route path="satpam" element={<AdminSatpam />} />
               <Route path="pengaturan" element={<AdminPengaturan />} />
               <Route path="roster" element={<AdminRoster />} />
+              <Route path="analitik" element={<AdminAnalitik />} />
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </ProtectedRoute>
         }
       />
 
       <Route path="/" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
-      <Route path="*" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
