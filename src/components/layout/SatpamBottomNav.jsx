@@ -1,4 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useAuth } from "../../store/AuthContext";
+import { getUnreadCount } from "../../services/notifications";
+import { supabase } from "../../lib/supabase";
 import { logout } from "../../services/auth";
 
 const navItems = [
@@ -14,13 +18,10 @@ const navItems = [
   {
     to: "/satpam/notifikasi",
     label: "Notifikasi",
+    hasNotifBadge: true,
     icon: (active) => (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     ),
   },
@@ -42,15 +43,32 @@ const navItems = [
       </svg>
     ),
   },
-];
+]
 
 export default function SatpamBottomNav() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [unread, setUnread] = useState(0)
+
+  useEffect(() => {
+    if (!user) return
+    getUnreadCount(user.id).then(setUnread)
+
+    const channel = supabase
+      .channel('satpam-bottom-notif')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'notifications',
+        filter: `user_id=eq.${user.id}`
+      }, () => getUnreadCount(user.id).then(setUnread))
+      .subscribe()
+
+    return () => supabase.removeChannel(channel)
+  }, [user])
 
   const handleLogout = async () => {
-    await logout();
-    navigate("/login");
-  };
+    await logout()
+    navigate("/login")
+  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 md:hidden">
@@ -60,13 +78,22 @@ export default function SatpamBottomNav() {
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition
+              `flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition relative
               ${isActive ? "text-green-600" : "text-slate-400 hover:text-slate-600"}`
             }
           >
             {({ isActive }) => (
               <>
-                {item.icon(isActive)}
+                <div className="relative">
+                  {item.icon(isActive)}
+                  {item.hasNotifBadge && unread > 0 && (
+                    <div className="absolute -top-1 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                      <span className="text-white font-bold" style={{ fontSize: '8px' }}>
+                        {unread > 9 ? '9+' : unread}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <span className="text-xs font-medium">{item.label}</span>
               </>
             )}
@@ -80,5 +107,5 @@ export default function SatpamBottomNav() {
         </button>
       </div>
     </div>
-  );
+  )
 }
