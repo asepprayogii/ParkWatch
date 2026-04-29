@@ -1,38 +1,38 @@
-import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "./store/AuthContext";
-import ProtectedRoute from "./components/layout/ProtectedRoute";
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { useAuth } from './store/AuthContext'
+import ProtectedRoute from './components/layout/ProtectedRoute'
 
-import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
-import NotFoundPage from "./pages/NotFoundPage";
+import LoginPage from './pages/auth/LoginPage'
+import RegisterPage from './pages/auth/RegisterPage'
 
-import UserFeed from "./pages/user/UserFeed";
-import UserUpload from "./pages/user/UserUpload";
-import UserNotifications from "./pages/user/UserNotifications";
-import UserProfile from "./pages/user/UserProfile";
+import UserFeed from './pages/user/UserFeed'
+import UserUpload from './pages/user/UserUpload'
+import UserNotifications from './pages/user/UserNotifications'
+import UserProfile from './pages/user/UserProfile'
 import UserRiwayat from './pages/user/UserRiwayat'
+import UserReportDetail from './pages/user/UserReportDetail'
 
-import SatpamDashboard from "./pages/satpam/SatpamDashboard";
-import SatpamJadwal from "./pages/satpam/SatpamJadwal";
-import SatpamRiwayat from "./pages/satpam/SatpamRiwayat";
-import SatpamNotifikasi from "./pages/satpam/SatpamNotifikasi";
+import SatpamDashboard from './pages/satpam/SatpamDashboard'
+import SatpamNotifikasi from './pages/satpam/SatpamNotifikasi'
+import SatpamJadwal from './pages/satpam/SatpamJadwal'
+import SatpamRiwayat from './pages/satpam/SatpamRiwayat'
+import SatpamReportDetail from './pages/satpam/SatpamReportDetail'
 
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminLaporan from "./pages/admin/AdminLaporan";
-import AdminZona from "./pages/admin/AdminZona";
-import AdminSatpam from "./pages/admin/AdminSatpam";
-import AdminPengaturan from "./pages/admin/AdminPengaturan";
-import AdminRoster from "./pages/admin/AdminRoster";
-import AdminAnalitik from "./pages/admin/AdminAnalitik";
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminLaporan from './pages/admin/AdminLaporan'
+import AdminZona from './pages/admin/AdminZona'
+import AdminSatpam from './pages/admin/AdminSatpam'
+import AdminRoster from './pages/admin/AdminRoster'
+import AdminPengaturan from './pages/admin/AdminPengaturan'
 
 function RedirectByRole({ user }) {
-  if (user.role === "admin") return <Navigate to="/admin/dashboard" replace />;
-  if (user.role === "satpam") return <Navigate to="/satpam/dashboard" replace />;
-  return <Navigate to="/user/feed" replace />;
+  if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />
+  if (user.role === 'satpam') return <Navigate to="/satpam/dashboard" replace />
+  return <Navigate to="/user/feed" replace />
 }
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuth()
 
   if (loading) {
     return (
@@ -42,70 +42,61 @@ function App() {
           <p className="text-sm text-slate-500">Memuat...</p>
         </div>
       </div>
-    );
+    )
   }
 
   return (
     <Routes>
+      {/* Public */}
       <Route path="/login" element={user ? <RedirectByRole user={user} /> : <LoginPage />} />
       <Route path="/register" element={user ? <RedirectByRole user={user} /> : <RegisterPage />} />
 
       {/* User */}
-      <Route
-        path="/user/*"
-        element={
-          <ProtectedRoute allowedRoles={["user"]}>
-            <Routes>
-              <Route path="feed" element={<UserFeed />} />
-              <Route path="upload" element={<UserUpload />} />
-              <Route path="notifications" element={<UserNotifications />} />
-              <Route path="profile" element={<UserProfile />} />
-              <Route path="riwayat" element={<UserRiwayat />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/user/*" element={
+        <ProtectedRoute allowedRoles={['user']}>
+          <Routes>
+            <Route path="feed" element={<UserFeed />} />
+            <Route path="upload" element={<UserUpload />} />
+            <Route path="notifications" element={<UserNotifications />} />
+            <Route path="riwayat" element={<UserRiwayat />} />
+            <Route path="profile" element={<UserProfile />} />
+            <Route path="report-detail/:id" element={<UserReportDetail />} />
+          </Routes>
+        </ProtectedRoute>
+      } />
 
       {/* Satpam */}
-      <Route
-        path="/satpam/*"
-        element={
-          <ProtectedRoute allowedRoles={["satpam"]}>
-            <Routes>
-              <Route path="dashboard" element={<SatpamDashboard />} />
-              <Route path="jadwal" element={<SatpamJadwal />} />
-              <Route path="riwayat" element={<SatpamRiwayat />} />
-              <Route path="notifikasi" element={<SatpamNotifikasi />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/satpam/*" element={
+        <ProtectedRoute allowedRoles={['satpam']}>
+          <Routes>
+            <Route path="dashboard" element={<SatpamDashboard />} />
+            <Route path="notifikasi" element={<SatpamNotifikasi />} />
+            <Route path="jadwal" element={<SatpamJadwal />} />
+            <Route path="riwayat" element={<SatpamRiwayat />} />
+            <Route path="report-detail/:id" element={<SatpamReportDetail />} />
+          </Routes>
+        </ProtectedRoute>
+      } />
 
       {/* Admin */}
-      <Route
-        path="/admin/*"
-        element={
-          <ProtectedRoute allowedRoles={["admin"]}>
-            <Routes>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="laporan" element={<AdminLaporan />} />
-              <Route path="zona" element={<AdminZona />} />
-              <Route path="satpam" element={<AdminSatpam />} />
-              <Route path="pengaturan" element={<AdminPengaturan />} />
-              <Route path="roster" element={<AdminRoster />} />
-              <Route path="analitik" element={<AdminAnalitik />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/admin/*" element={
+        <ProtectedRoute allowedRoles={['admin']}>
+          <Routes>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="laporan" element={<AdminLaporan />} />
+            <Route path="zona" element={<AdminZona />} />
+            <Route path="satpam" element={<AdminSatpam />} />
+            <Route path="roster" element={<AdminRoster />} />
+            <Route path="pengaturan" element={<AdminPengaturan />} />
+          </Routes>
+        </ProtectedRoute>
+      } />
 
+      {/* Default */}
       <Route path="/" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
-      <Route path="*" element={<NotFoundPage />} />
+      <Route path="*" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
     </Routes>
-  );
+  )
 }
 
-export default App;
+export default App
