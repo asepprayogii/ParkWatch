@@ -346,7 +346,7 @@ export default function AdminZona() {
                       value={form.description}
                       onChange={e => setForm({ ...form, description: e.target.value })}
                       placeholder="Tambahkan detail lokasi atau keterangan..."
-                      rows={4}
+                      rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all resize-none text-sm shadow-sm"
                     />
                   </div>
