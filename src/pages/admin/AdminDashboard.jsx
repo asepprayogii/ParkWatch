@@ -84,6 +84,7 @@ export default function AdminDashboard() {
   const [zoneStats, setZoneStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [chartData, setChartData] = useState([])
+  const [mapZones, setMapZones] = useState([])
 
   const fetchAll = async () => {
     try {
@@ -145,6 +146,12 @@ export default function AdminDashboard() {
         }
       })
       setTopReporters(Object.entries(reporterCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, count]) => ({ id, name: reporterNames[id] ?? 'Anonim', count })))
+
+      // Fetch zones with coordinates for the map
+      const { data: zonesData } = await supabase
+        .from('zones')
+        .select('id, name, latitude, longitude, radius')
+      setMapZones((zonesData ?? []).filter(z => z.latitude && z.longitude))
     } catch (err) {
       console.error(err)
     } finally {
@@ -238,17 +245,40 @@ export default function AdminDashboard() {
               <GlassCard className="p-8">
                 <SectionTitle icon={MapIcon}>Peta Universitas Trunojoyo</SectionTitle>
                 <div className="h-[400px] w-full rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] relative z-0">
-                  <MapContainer center={mapCenter} zoom={18} scrollWheelZoom={false} className="h-full w-full">
+                  <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} className="h-full w-full">
                     <TileLayer
                       attribution='&copy; <a href="https://osm.org">OSM</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <Marker position={mapCenter}>
-                      <Popup>
-                        <div className="font-black text-slate-900">Pusat Parkir UTM</div>
-                      </Popup>
-                    </Marker>
-                    <Circle center={mapCenter} radius={80} pathOptions={{ color: '#37B6E9', fillColor: '#37B6E9', fillOpacity: 0.3 }} />
+                    {mapZones.map(zone => (
+                      <Circle
+                        key={zone.id}
+                        center={[zone.latitude, zone.longitude]}
+                        radius={zone.radius || 50}
+                        pathOptions={{ color: '#37B6E9', fillColor: '#4B4CED', fillOpacity: 0.25, weight: 2 }}
+                      >
+                        <Popup>
+                          <div className="font-black text-slate-900 text-sm">{zone.name}</div>
+                        </Popup>
+                      </Circle>
+                    ))}
+                    {mapZones.map(zone => (
+                      <Marker key={`marker-${zone.id}`} position={[zone.latitude, zone.longitude]}>
+                        <Popup>
+                          <div className="font-black text-slate-900 text-sm">{zone.name}</div>
+                        </Popup>
+                      </Marker>
+                    ))}
+                    {mapZones.length === 0 && (
+                      <>
+                        <Marker position={mapCenter}>
+                          <Popup>
+                            <div className="font-black text-slate-900">Pusat Parkir UTM</div>
+                          </Popup>
+                        </Marker>
+                        <Circle center={mapCenter} radius={80} pathOptions={{ color: '#37B6E9', fillColor: '#37B6E9', fillOpacity: 0.3 }} />
+                      </>
+                    )}
                   </MapContainer>
                 </div>
               </GlassCard>
