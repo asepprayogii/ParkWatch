@@ -43,6 +43,15 @@ const navItems = [
       </svg>
     ),
   },
+  {
+    to: "/satpam/profil",
+    label: "Profil",
+    icon: (active) => (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    ),
+  },
 ]
 
 export default function SatpamBottomNav() {
@@ -71,7 +80,7 @@ export default function SatpamBottomNav() {
   }
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 px-2 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#242C3B] border-t border-slate-200 dark:border-[#353F54] px-2 md:hidden transition-colors duration-300">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => (
           <NavLink
@@ -79,7 +88,7 @@ export default function SatpamBottomNav() {
             to={item.to}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition relative
-              ${isActive ? "text-green-600" : "text-slate-400 hover:text-slate-600"}`
+              ${isActive ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`
             }
           >
             {({ isActive }) => (
@@ -87,23 +96,23 @@ export default function SatpamBottomNav() {
                 <div className="relative">
                   {item.icon(isActive)}
                   {item.hasNotifBadge && unread > 0 && (
-                    <div className="absolute -top-1 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                    <div className="absolute -top-1 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#242C3B]">
                       <span className="text-white font-bold" style={{ fontSize: '8px' }}>
                         {unread > 9 ? '9+' : unread}
                       </span>
                     </div>
                   )}
                 </div>
-                <span className="text-xs font-medium">{item.label}</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
               </>
             )}
           </NavLink>
         ))}
-        <button onClick={handleLogout} className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-red-400 hover:text-red-600 transition">
+        <button onClick={handleLogout} className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-red-500 dark:text-red-400 opacity-80 hover:opacity-100 transition">
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
           </svg>
-          <span className="text-xs font-medium">Keluar</span>
+          <span className="text-[10px] font-bold uppercase tracking-tight">Keluar</span>
         </button>
       </div>
     </div>

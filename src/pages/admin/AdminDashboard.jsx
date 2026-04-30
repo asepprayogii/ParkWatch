@@ -243,7 +243,7 @@ export default function AdminDashboard() {
             {/* Map */}
             <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
               <GlassCard className="p-8">
-                <SectionTitle icon={MapIcon}>Peta Universitas Trunojoyo</SectionTitle>
+                <SectionTitle icon={MapIcon}>Zona Parkir Universitas Trunodjoyo Madura</SectionTitle>
                 <div className="h-[400px] w-full rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] relative z-0">
                   <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} className="h-full w-full">
                     <TileLayer

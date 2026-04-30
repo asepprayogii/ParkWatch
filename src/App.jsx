@@ -17,6 +17,7 @@ import SatpamNotifikasi from './pages/satpam/SatpamNotifikasi'
 import SatpamJadwal from './pages/satpam/SatpamJadwal'
 import SatpamRiwayat from './pages/satpam/SatpamRiwayat'
 import SatpamReportDetail from './pages/satpam/SatpamReportDetail'
+import SatpamProfil from './pages/satpam/SatpamProfil'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminLaporan from './pages/admin/AdminLaporan'
@@ -74,6 +75,7 @@ function App() {
             <Route path="jadwal" element={<SatpamJadwal />} />
             <Route path="riwayat" element={<SatpamRiwayat />} />
             <Route path="report-detail/:id" element={<SatpamReportDetail />} />
+            <Route path="profil" element={<SatpamProfil />} />
           </Routes>
         </ProtectedRoute>
       } />
