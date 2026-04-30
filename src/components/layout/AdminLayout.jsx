@@ -8,7 +8,7 @@ export default function AdminLayout({ title, children }) {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300"
+      className="min-h-screen bg-slate-50 dark:bg-[#222834] transition-colors duration-300 text-slate-900 dark:text-slate-100"
       style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
       {/* Sidebar — desktop only */}

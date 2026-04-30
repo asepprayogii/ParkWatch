@@ -1,58 +1,80 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { useLocation } from 'react-router-dom'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
+import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import { Car, AlertTriangle, CheckCircle, Clock, MapPin, Activity, ShieldCheck, Map as MapIcon, Users, Hash, AlertOctagon, TrendingUp } from 'lucide-react'
+import L from 'leaflet'
+import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import { motion } from 'framer-motion'
 
-// Buat komponen helper kecil
-function PageTransition({ children }) {
-  const location = useLocation()
-  const [visible, setVisible] = useState(false)
+// Fix Leaflet marker icon issue in Vite
+import icon from 'leaflet/dist/images/marker-icon.png'
+import iconShadow from 'leaflet/dist/images/marker-shadow.png'
 
-  useEffect(() => {
-    setVisible(false)
-    const t = setTimeout(() => setVisible(true), 30)
-    return () => clearTimeout(t)
-  }, [location.pathname])
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+})
+L.Marker.prototype.options.icon = DefaultIcon
 
+function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
+
+// Glassmorphism Component with high contrast for the palette
+function GlassCard({ children, className }) {
   return (
-    <div
-      style={{
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(8px)',
-        transition: 'opacity 0.28s cubic-bezier(.4,0,.2,1), transform 0.28s cubic-bezier(.4,0,.2,1)',
-      }}
+    <div className={cn(
+      "bg-white dark:bg-[#242C3B] border border-slate-200 dark:border-[#353F54] shadow-xl rounded-[24px] overflow-hidden transition-all duration-300",
+      className
+    )}>
+      {children}
+    </div>
+  )
+}
+
+function StatCard({ label, value, icon, colorClass, gradientClass, delay }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay, ease: [0.23, 1, 0.32, 1] }}
     >
-      {children}
+      <GlassCard className="p-6 relative overflow-hidden group hover:-translate-y-1.5 hover:shadow-2xl">
+        <div className={cn("absolute -right-10 -top-10 w-32 h-32 rounded-full opacity-10 blur-3xl transition-all duration-500 group-hover:scale-150 group-hover:opacity-20", gradientClass)} />
+        <div className="flex items-center gap-5 relative z-10">
+          <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-lg text-white transition-transform duration-300 group-hover:scale-110", colorClass)}>
+            {icon}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-slate-500 dark:text-[#37B6E9] tracking-wide uppercase opacity-80 mb-1">{label}</p>
+            <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{value}</p>
+          </div>
+        </div>
+      </GlassCard>
+    </motion.div>
+  )
+}
+
+function SectionTitle({ icon: Icon, children }) {
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      <div className="p-2.5 bg-[#37B6E9]/10 dark:bg-[#37B6E9]/20 rounded-xl">
+        <Icon className="w-5 h-5 text-[#37B6E9]" />
+      </div>
+      <h3 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        {children}
+      </h3>
     </div>
   )
 }
 
-// Stat Card Component
-function StatCard({ label, value, icon, color }) {
-  return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-4 transition-colors">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color} dark:bg-slate-700/50`}>
-        {icon}
-      </div>
-      <div>
-        <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold text-slate-800 dark:text-white mt-0.5 transition-colors">{value}</p>
-      </div>
-    </div>
-  )
-}
-
-// Section Title Component
-function SectionTitle({ children }) {
-  return (
-    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 transition-colors">
-      <div className="w-1 h-4 bg-blue-600 rounded-full" />
-      {children}
-    </h3>
-  )
-}
-
-// Lalu wrap return JSX halaman kamu:
 export default function AdminDashboard() {
   const [stats, setStats] = useState({ total: 0, pending: 0, in_progress: 0, resolved: 0 })
   const [recentReports, setRecentReports] = useState([])
@@ -61,10 +83,10 @@ export default function AdminDashboard() {
   const [topSatpam, setTopSatpam] = useState([])
   const [zoneStats, setZoneStats] = useState([])
   const [loading, setLoading] = useState(true)
+  const [chartData, setChartData] = useState([])
 
   const fetchAll = async () => {
     try {
-      // Semua laporan
       const { data: allReports } = await supabase
         .from('reports')
         .select('*, users(id, full_name), zones(id, name)')
@@ -72,7 +94,6 @@ export default function AdminDashboard() {
 
       if (!allReports) return
 
-      // Stats utama
       setStats({
         total: allReports.length,
         pending: allReports.filter(r => r.status === 'pending').length,
@@ -80,38 +101,14 @@ export default function AdminDashboard() {
         resolved: allReports.filter(r => r.status === 'resolved').length,
       })
 
-      // 5 laporan terbaru
-      setRecentReports(allReports.slice(0, 5))
+      setRecentReports(allReports.slice(0, 6))
 
-      // Top plat — plat yang paling sering muncul
       const plateCount = {}
       allReports.forEach(r => {
-        if (r.plate_number) {
-          plateCount[r.plate_number] = (plateCount[r.plate_number] ?? 0) + 1
-        }
+        if (r.plate_number) plateCount[r.plate_number] = (plateCount[r.plate_number] ?? 0) + 1
       })
-      const sortedPlates = Object.entries(plateCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([plate, count]) => ({ plate, count }))
-      setTopPlates(sortedPlates)
+      setTopPlates(Object.entries(plateCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([plate, count]) => ({ plate, count })))
 
-      // Top pelapor — user yang paling sering lapor
-      const reporterCount = {}
-      const reporterNames = {}
-      allReports.forEach(r => {
-        if (r.users?.id) {
-          reporterCount[r.users.id] = (reporterCount[r.users.id] ?? 0) + 1
-          reporterNames[r.users.id] = r.users.full_name
-        }
-      })
-      const sortedReporters = Object.entries(reporterCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([id, count]) => ({ id, name: reporterNames[id], count }))
-      setTopReporters(sortedReporters)
-
-      // Zona paling bermasalah
       const zoneCount = {}
       const zoneNames = {}
       allReports.forEach(r => {
@@ -120,29 +117,13 @@ export default function AdminDashboard() {
           zoneNames[r.zones.id] = r.zones.name
         }
       })
-      const sortedZones = Object.entries(zoneCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([id, count]) => ({ id, name: zoneNames[id], count }))
+      const sortedZones = Object.entries(zoneCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, count]) => ({ id, name: zoneNames[id], count }))
       setZoneStats(sortedZones)
+      setChartData(sortedZones.map(z => ({ name: z.name.substring(0, 10), Laporan: z.count })))
 
-      // Top satpam — yang paling banyak menyelesaikan laporan
-      const { data: resolvedReports } = await supabase
-        .from('reports')
-        .select('zone_id, zones(name)')
-        .eq('status', 'resolved')
+      const { data: resolvedReports } = await supabase.from('reports').select('zone_id, zones(name)').eq('status', 'resolved')
+      const { data: rosterData } = await supabase.from('roster').select('satpam_id, zone_id, users(full_name)')
 
-      // Ambil roster untuk tahu satpam mana yang handle zona resolved
-      const { data: satpamData } = await supabase
-        .from('users')
-        .select('id, full_name')
-        .eq('role', 'satpam')
-
-      const { data: rosterData } = await supabase
-        .from('roster')
-        .select('satpam_id, zone_id, users(full_name)')
-
-      // Hitung berapa laporan resolved per zona, lalu map ke satpam
       const satpamResolvedCount = {}
       const satpamNames = {}
       resolvedReports?.forEach(r => {
@@ -153,12 +134,17 @@ export default function AdminDashboard() {
         })
       })
 
-      const sortedSatpam = Object.entries(satpamResolvedCount)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 5)
-        .map(([id, count]) => ({ id, name: satpamNames[id] ?? 'Unknown', count }))
-      setTopSatpam(sortedSatpam)
+      setTopSatpam(Object.entries(satpamResolvedCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, count]) => ({ id, name: satpamNames[id] ?? 'Unknown', count })))
 
+      const reporterCount = {}
+      const reporterNames = {}
+      allReports.forEach(r => {
+        if (r.users?.id) {
+          reporterCount[r.users.id] = (reporterCount[r.users.id] ?? 0) + 1
+          reporterNames[r.users.id] = r.users.full_name
+        }
+      })
+      setTopReporters(Object.entries(reporterCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, count]) => ({ id, name: reporterNames[id] ?? 'Anonim', count })))
     } catch (err) {
       console.error(err)
     } finally {
@@ -176,203 +162,203 @@ export default function AdminDashboard() {
   }, [])
 
   const statusConfig = {
-    pending: { label: 'Menunggu', color: 'bg-yellow-50 text-yellow-600 border-yellow-200' },
-    in_progress: { label: 'Diproses', color: 'bg-blue-50 text-blue-600 border-blue-200' },
-    resolved: { label: 'Selesai', color: 'bg-green-50 text-green-600 border-green-200' },
+    pending: { label: 'Menunggu', bg: 'bg-amber-100 dark:bg-amber-500/20', text: 'text-amber-700 dark:text-amber-300', dot: 'bg-amber-500' },
+    in_progress: { label: 'Diproses', bg: 'bg-blue-100 dark:bg-[#37B6E9]/20', text: 'text-blue-700 dark:text-[#37B6E9]', dot: 'bg-[#37B6E9]' },
+    resolved: { label: 'Selesai', bg: 'bg-emerald-100 dark:bg-emerald-500/20', text: 'text-emerald-700 dark:text-emerald-300', dot: 'bg-emerald-500' },
   }
 
   function timeAgo(dateStr) {
     const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
-    if (diff < 60) return `${diff} dtk lalu`
-    if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`
-    if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`
-    return `${Math.floor(diff / 86400)} hari lalu`
+    if (diff < 60) return `${diff} dtk`
+    if (diff < 3600) return `${Math.floor(diff / 60)} mnt`
+    if (diff < 86400) return `${Math.floor(diff / 3600)} jam`
+    return `${Math.floor(diff / 86400)} hari`
   }
 
-  const maxPlate = topPlates[0]?.count ?? 1
-  const maxReporter = topReporters[0]?.count ?? 1
-  const maxZone = zoneStats[0]?.count ?? 1
-  const maxSatpam = topSatpam[0]?.count ?? 1
+  const mapCenter = [-7.1297312, 112.7242796]
 
   return (
-    <AdminLayout title="Dashboard">
-      <PageTransition>
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total Laporan" value={stats.total} color="bg-blue-50 text-blue-600"
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+    <AdminLayout title="Ringkasan">
+      <div className="max-w-7xl mx-auto space-y-8 pb-10">
+        
+        {/* Header Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4"
+        >
+          <div>
+            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Dashboard Admin</h2>
+            <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">Sistem Pengawasan Parkir Terpadu ParkWatch</p>
+          </div>
+          <div className="flex items-center gap-3 bg-white dark:bg-[#242C3B] px-5 py-2.5 rounded-2xl border border-slate-200 dark:border-[#353F54] shadow-md">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-100 uppercase tracking-widest">Sistem Aktif</span>
+          </div>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard 
+            label="Total Laporan" value={stats.total} delay={0.1}
+            icon={<Car size={28} strokeWidth={2.5}/>} 
+            colorClass="bg-[#4B4CED]" 
+            gradientClass="bg-[#4B4CED]" 
           />
-          <StatCard label="Menunggu" value={stats.pending} color="bg-yellow-50 text-yellow-600"
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          <StatCard 
+            label="Menunggu" value={stats.pending} delay={0.2}
+            icon={<AlertTriangle size={28} strokeWidth={2.5}/>} 
+            colorClass="bg-amber-500" 
+            gradientClass="bg-amber-500" 
           />
-          <StatCard label="Diproses" value={stats.in_progress} color="bg-orange-50 text-orange-600"
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
+          <StatCard 
+            label="Diproses" value={stats.in_progress} delay={0.3}
+            icon={<Activity size={28} strokeWidth={2.5}/>} 
+            colorClass="bg-[#37B6E9]" 
+            gradientClass="bg-[#37B6E9]" 
           />
-          <StatCard label="Selesai" value={stats.resolved} color="bg-green-50 text-green-600"
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          <StatCard 
+            label="Selesai" value={stats.resolved} delay={0.4}
+            icon={<ShieldCheck size={28} strokeWidth={2.5}/>} 
+            colorClass="bg-emerald-500" 
+            gradientClass="bg-emerald-500" 
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          <div className="lg:col-span-2 space-y-8">
+            
+            {/* Map */}
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
+              <GlassCard className="p-8">
+                <SectionTitle icon={MapIcon}>Peta Universitas Trunojoyo</SectionTitle>
+                <div className="h-[400px] w-full rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] relative z-0">
+                  <MapContainer center={mapCenter} zoom={18} scrollWheelZoom={false} className="h-full w-full">
+                    <TileLayer
+                      attribution='&copy; <a href="https://osm.org">OSM</a>'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <Marker position={mapCenter}>
+                      <Popup>
+                        <div className="font-black text-slate-900">Pusat Parkir UTM</div>
+                      </Popup>
+                    </Marker>
+                    <Circle center={mapCenter} radius={80} pathOptions={{ color: '#37B6E9', fillColor: '#37B6E9', fillOpacity: 0.3 }} />
+                  </MapContainer>
+                </div>
+              </GlassCard>
+            </motion.div>
 
-          {/* Plat Paling Sering */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-            <SectionTitle>Plat Paling Sering Melanggar</SectionTitle>
-            {loading ? (
-              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-            ) : topPlates.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">Belum ada data</p>
-            ) : (
-              <div className="space-y-3">
-                {topPlates.map((item, idx) => (
-                  <div key={item.plate} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}</span>
-                    <div className="bg-slate-900 text-white font-mono text-xs px-2.5 py-1.5 rounded-lg tracking-widest shrink-0">
-                      {item.plate}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="h-2 bg-red-100 rounded-full flex-1 mr-2 overflow-hidden">
-                          <div className="h-2 bg-red-500 rounded-full transition-all"
-                            style={{ width: `${(item.count / maxPlate) * 100}%` }} />
+            {/* Chart */}
+            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6 }}>
+              <GlassCard className="p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <SectionTitle icon={TrendingUp}>Zona Bermasalah</SectionTitle>
+                  <span className="text-xs font-black text-slate-400 dark:text-[#37B6E9] uppercase tracking-[0.2em]">Analisis Data</span>
+                </div>
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#353F54" opacity={0.2} />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }} />
+                      <Tooltip 
+                        cursor={{ fill: 'rgba(55, 182, 233, 0.05)' }}
+                        contentStyle={{ backgroundColor: '#242C3B', border: '1px solid #353F54', borderRadius: '16px', color: '#fff', fontWeight: 700 }}
+                      />
+                      <Bar dataKey="Laporan" fill="#4B4CED" radius={[8, 8, 0, 0]} barSize={45} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </GlassCard>
+            </motion.div>
+          </div>
+
+          <div className="space-y-8">
+            
+            {/* Laporan Terbaru */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}>
+              <GlassCard className="p-8 flex flex-col h-[480px]">
+                <SectionTitle icon={Clock}>Laporan Terbaru</SectionTitle>
+                <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide">
+                  {recentReports.map((report) => {
+                    const status = statusConfig[report.status]
+                    return (
+                      <div key={report.id} className="p-5 rounded-3xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]/50 hover:border-[#37B6E9]/50 transition-all group">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-base font-black text-slate-900 dark:text-white font-mono bg-white dark:bg-[#242C3B] px-3 py-1 rounded-xl shadow-sm border border-slate-100 dark:border-[#353F54]">
+                            {report.plate_number || 'UNKNOWN'}
+                          </span>
+                          <div className={cn("px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2", status.bg, status.text)}>
+                            <span className={cn("w-1.5 h-1.5 rounded-full", status.dot)}></span>
+                            {status.label}
+                          </div>
                         </div>
-                        <span className="text-xs font-bold text-red-600 shrink-0">{item.count}x</span>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-700 dark:text-slate-200">{report.zones?.name}</span>
+                          <span className="text-slate-400 dark:text-slate-400 font-bold">{timeAgo(report.created_at)}</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                    )
+                  })}
+                </div>
+              </GlassCard>
+            </motion.div>
 
-          {/* Zona Paling Bermasalah */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-            <SectionTitle>Zona Paling Bermasalah</SectionTitle>
-            {loading ? (
-              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-            ) : zoneStats.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">Belum ada data</p>
-            ) : (
-              <div className="space-y-3">
-                {zoneStats.map((item, idx) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700 truncate mr-2">{item.name}</span>
-                        <span className="text-xs font-bold text-orange-600 shrink-0">{item.count} laporan</span>
+            {/* Top Pelanggar */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }}>
+              <GlassCard className="p-8">
+                <SectionTitle icon={AlertOctagon}>Pelanggar Tersering</SectionTitle>
+                <div className="space-y-5">
+                  {topPlates.map((item, idx) => (
+                    <div key={item.plate} className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <span className={cn("text-xs font-black", idx === 0 ? "text-[#37B6E9]" : "text-slate-400")}>0{idx + 1}</span>
+                        <span className="font-mono text-sm font-black text-slate-800 dark:text-white">{item.plate}</span>
                       </div>
-                      <div className="h-2 bg-orange-100 rounded-full overflow-hidden">
-                        <div className="h-2 bg-orange-500 rounded-full transition-all"
-                          style={{ width: `${(item.count / maxZone) * 100}%` }} />
+                      <div className="flex items-center gap-3">
+                        <div className="h-1.5 w-20 bg-slate-100 dark:bg-[#222834] rounded-full overflow-hidden">
+                          <div className="h-full bg-[#4B4CED] rounded-full" style={{ width: `${(item.count / (topPlates[0]?.count || 1)) * 100}%` }} />
+                        </div>
+                        <span className="text-sm font-black text-slate-900 dark:text-[#37B6E9]">{item.count}</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </motion.div>
 
-          {/* Pelapor Paling Aktif */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-            <SectionTitle>Pelapor Paling Aktif</SectionTitle>
-            {loading ? (
-              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-            ) : topReporters.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">Belum ada data</p>
-            ) : (
-              <div className="space-y-3">
-                {topReporters.map((item, idx) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}</span>
-                    <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-bold text-blue-600">
-                        {item.name?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700 truncate mr-2">{item.name}</span>
-                        <span className="text-xs font-bold text-blue-600 shrink-0">{item.count} laporan</span>
+            {/* Top Pelapor */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.8 }}>
+              <GlassCard className="p-8">
+                <SectionTitle icon={Users}>Pelapor Teraktif</SectionTitle>
+                <div className="space-y-5">
+                  {topReporters.map((item, idx) => (
+                    <div key={item.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#222834] flex items-center justify-center text-[10px] font-black text-slate-500">
+                          {item.name.charAt(0)}
+                        </div>
+                        <span className="text-sm font-bold text-slate-800 dark:text-white">{item.name}</span>
                       </div>
-                      <div className="h-2 bg-blue-100 rounded-full overflow-hidden">
-                        <div className="h-2 bg-blue-500 rounded-full transition-all"
-                          style={{ width: `${(item.count / maxReporter) * 100}%` }} />
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-[#37B6E9] bg-[#37B6E9]/10 px-2 py-0.5 rounded-lg">{item.count}</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase">Laporan</span>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              </GlassCard>
+            </motion.div>
 
-          {/* Satpam Paling Aktif */}
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-            <SectionTitle>Satpam Paling Aktif</SectionTitle>
-            {loading ? (
-              <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-            ) : topSatpam.length === 0 ? (
-              <p className="text-sm text-slate-400 text-center py-6">Belum ada data</p>
-            ) : (
-              <div className="space-y-3">
-                {topSatpam.map((item, idx) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}</span>
-                    <div className="w-8 h-8 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-bold text-green-600">
-                        {item.name?.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-medium text-slate-700 truncate mr-2">{item.name}</span>
-                        <span className="text-xs font-bold text-green-600 shrink-0">{item.count} selesai</span>
-                      </div>
-                      <div className="h-2 bg-green-100 rounded-full overflow-hidden">
-                        <div className="h-2 bg-green-500 rounded-full transition-all"
-                          style={{ width: `${(item.count / maxSatpam) * 100}%` }} />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
-
         </div>
-
-        {/* Laporan Terbaru */}
-        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
-          <SectionTitle>Laporan Terbaru</SectionTitle>
-          {loading ? (
-            <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}</div>
-          ) : recentReports.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-8">Belum ada laporan</p>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {recentReports.map(report => {
-                const status = statusConfig[report.status] ?? statusConfig.pending
-                return (
-                  <div key={report.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-slate-900 dark:bg-slate-950 text-white font-mono text-xs px-2 py-1 rounded-lg tracking-wider shrink-0">
-                        {report.plate_number ?? '?????'}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors">{report.zones?.name ?? '-'}</p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors">{report.users?.full_name} · {timeAgo(report.created_at)}</p>
-                      </div>
-                    </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${status.color} dark:bg-slate-800/50 dark:border-slate-600 transition-colors`}>
-                      {status.label}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </PageTransition>
+      </div>
     </AdminLayout>
   )
 }

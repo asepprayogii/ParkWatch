@@ -6,7 +6,20 @@ export default {
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        park: {
+          bg: '#222834',
+          card: '#242C3B',
+          cyan: '#37B6E9',
+          indigo: '#4B4CED',
+          border: '#353F54',
+        }
+      },
+      fontFamily: {
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
+      }
+    },
   },
   plugins: [],
 }

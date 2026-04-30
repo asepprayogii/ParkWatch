@@ -1,5 +1,11 @@
 import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
+import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
 
 export default function AdminTopbar({ title }) {
   const { user } = useAuth()
@@ -11,10 +17,8 @@ export default function AdminTopbar({ title }) {
     <>
       <style>{`
         .pw-topbar {
-          background: rgba(2, 18, 42, 0.88);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-bottom: 1px solid rgba(55, 138, 221, 0.18);
+          background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'};
+          border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'};
           font-family: 'Plus Jakarta Sans', sans-serif;
         }
         .pw-topbar::after {
@@ -42,14 +46,14 @@ export default function AdminTopbar({ title }) {
             </svg>
           </div>
           <div>
-            <p className="font-bold text-white text-sm leading-none" style={{ letterSpacing: '-0.3px' }}>ParkWatch</p>
-            <p className="leading-none mt-0.5" style={{ color: 'rgba(176,210,255,0.5)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Admin</p>
+            <p className={cn("font-bold text-sm leading-none", theme === 'dark' ? "text-white" : "text-slate-900")} style={{ letterSpacing: '-0.3px' }}>ParkWatch</p>
+            <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Admin</p>
           </div>
         </div>
 
         {/* Title — centered */}
         <h1
-          className="absolute left-1/2 -translate-x-1/2 font-semibold text-sm text-white"
+          className={cn("absolute left-1/2 -translate-x-1/2 font-bold text-sm", theme === 'dark' ? "text-white" : "text-slate-900")}
           style={{ letterSpacing: '-0.2px' }}
         >
           {title}

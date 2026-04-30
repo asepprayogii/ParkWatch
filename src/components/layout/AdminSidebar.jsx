@@ -4,6 +4,12 @@ import { logout } from "../../services/auth";
 import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../store/ThemeContext";
+import clsx from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs))
+}
 const navItems = [
   {
     to: "/admin/dashboard",
@@ -72,12 +78,10 @@ const navItems = [
 
 // ─── Styles ─────────────────────────────────────────────────────────────
 const S = {
-  sidebar: (collapsed) => ({
+  sidebar: (collapsed, theme) => ({
     width: collapsed ? "64px" : "224px",
-    background: "rgba(2, 18, 42, 0.82)",
-    backdropFilter: "blur(20px)",
-    WebkitBackdropFilter: "blur(20px)",
-    borderRight: "1px solid rgba(55, 138, 221, 0.18)",
+    background: theme === "dark" ? "#242C3B" : "#FFFFFF",
+    borderRight: `1px solid ${theme === "dark" ? "#353F54" : "#E2E8F0"}`,
     transition: "width 0.3s cubic-bezier(.4,0,.2,1)",
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   }),
@@ -211,12 +215,12 @@ export default function AdminSidebar({ onCollapse }) {
         .pw-logout:hover { background: rgba(252,99,99,0.08) !important; border-color: rgba(252,99,99,0.2) !important; color: #fc6363 !important; }
       `}</style>
 
-      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full z-50 overflow-hidden" style={S.sidebar(collapsed)}>
+      <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full z-50 overflow-hidden" style={S.sidebar(collapsed, theme)}>
         {/* Shiny top edge */}
         <div style={S.shineTop} />
 
         {/* ── Logo + Toggle ── */}
-        <div className="flex items-center h-14 px-3" style={{ borderBottom: "1px solid rgba(55,138,221,0.15)", justifyContent: collapsed ? "center" : "space-between" }}>
+        <div className="flex items-center h-14 px-3" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, justifyContent: collapsed ? "center" : "space-between" }}>
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
               <div style={S.logoIcon}>
@@ -225,8 +229,8 @@ export default function AdminSidebar({ onCollapse }) {
                 </svg>
               </div>
               <div className="overflow-hidden">
-                <p className="font-bold text-white text-sm leading-none tracking-tight">ParkWatch</p>
-                <p className="text-xs leading-none mt-0.5" style={{ color: "rgba(176,210,255,0.5)", letterSpacing: "0.4px", textTransform: "uppercase", fontSize: "9px" }}>Admin Panel</p>
+                <p className={cn("font-bold text-sm leading-none tracking-tight", theme === 'dark' ? "text-white" : "text-slate-900")}>ParkWatch</p>
+                <p className="text-xs leading-none mt-0.5" style={{ color: theme === 'dark' ? "rgba(176,210,255,0.5)" : "rgba(100,116,139,0.7)", letterSpacing: "0.4px", textTransform: "uppercase", fontSize: "9px" }}>Admin Panel</p>
               </div>
             </div>
           )}
@@ -239,14 +243,14 @@ export default function AdminSidebar({ onCollapse }) {
         </div>
 
         {/* ── User Info ── */}
-        <div className="px-3 py-3 flex items-center overflow-hidden" style={{ borderBottom: "1px solid rgba(55,138,221,0.15)", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start" }}>
+        <div className="px-3 py-3 flex items-center overflow-hidden" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start" }}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={S.avatarRing}>
             <span className="text-sm font-bold text-white">{initials}</span>
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
-              <p className="text-xs font-semibold text-white truncate">{user?.full_name ?? "Admin"}</p>
-              <p className="text-xs truncate" style={{ color: "rgba(176,210,255,0.45)", fontSize: "10px" }}>{user?.email ?? ""}</p>
+              <p className={cn("text-xs font-bold truncate", theme === 'dark' ? "text-white" : "text-slate-900")}>{user?.full_name ?? "Admin"}</p>
+              <p className="text-xs truncate" style={{ color: theme === 'dark' ? "rgba(176,210,255,0.45)" : "rgba(100,116,139,0.7)", fontSize: "10px" }}>{user?.email ?? ""}</p>
             </div>
           )}
         </div>
@@ -263,8 +267,8 @@ export default function AdminSidebar({ onCollapse }) {
                   to={item.to}
                   title={collapsed ? item.label : ""}
                   className={({ isActive }) =>
-                    `pw-nav-item flex items-center rounded-xl text-sm font-medium relative overflow-hidden px-2 py-2.5 transition-all duration-200 ${
-                      isActive ? "bg-blue-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    `pw-nav-item flex items-center rounded-xl text-sm font-bold relative overflow-hidden px-2 py-2.5 transition-all duration-200 ${
+                      isActive ? "bg-park-indigo text-white shadow-lg" : "text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-park-border/50 hover:text-slate-900 dark:hover:text-white"
                     } ${collapsed ? "justify-center" : "justify-start"}`
                   }
                   style={({ isActive }) => ({
