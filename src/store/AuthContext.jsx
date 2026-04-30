@@ -40,15 +40,32 @@ export function AuthProvider({ children }) {
       fetchProfile(session?.user ?? null)
     })
 
-    // Listen perubahan auth
+    // Listen perubahan auth (termasuk token expired)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        fetchProfile(session?.user ?? null)
+      (event, session) => {
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          fetchProfile(session?.user ?? null)
+        } else if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          fetchProfile(session?.user ?? null)
+        }
       }
     )
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Periodic token check
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session && user) {
+        // Token expired and couldn't be refreshed
+        setUser(null)
+      }
+    }, 60000) // Check every minute
+
+    return () => clearInterval(interval)
+  }, [user])
 
   return (
     <AuthContext.Provider value={{ user, setUser, loading }}>
