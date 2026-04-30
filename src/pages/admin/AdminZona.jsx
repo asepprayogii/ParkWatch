@@ -2,6 +2,39 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { useLocation } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+// Fix Leaflet marker icon issue in Vite
+import icon from 'leaflet/dist/images/marker-icon.png'
+import iconShadow from 'leaflet/dist/images/marker-shadow.png'
+
+let DefaultIcon = L.icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+})
+L.Marker.prototype.options.icon = DefaultIcon
+
+// Konfigurasi Area Universitas Trunojoyo Madura
+const UTM_CENTER = [-7.1282, 112.7247]
+const UTM_BOUNDS = [
+  [-7.135, 112.715], // Pojok kiri bawah
+  [-7.120, 112.735]  // Pojok kanan atas
+]
+
+// Komponen untuk menangani klik di peta
+function LocationMarker({ position, setPosition }) {
+  useMapEvents({
+    click(e) {
+      setPosition(e.latlng)
+    },
+  })
+
+  return position ? <Marker position={position} /> : null
+}
 
 // Buat komponen helper kecil
 function PageTransition({ children }) {
@@ -33,7 +66,7 @@ export default function AdminZona() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editData, setEditData] = useState(null)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', description: '', latitude: null, longitude: null })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -65,14 +98,19 @@ export default function AdminZona() {
 
   const handleOpenAdd = () => {
     setEditData(null)
-    setForm({ name: '', description: '' })
+    setForm({ name: '', description: '', latitude: null, longitude: null })
     setError('')
     setShowForm(true)
   }
 
   const handleOpenEdit = (zone) => {
     setEditData(zone)
-    setForm({ name: zone.name, description: zone.description ?? '' })
+    setForm({ 
+      name: zone.name, 
+      description: zone.description ?? '',
+      latitude: zone.latitude,
+      longitude: zone.longitude
+    })
     setError('')
     setShowForm(true)
   }
@@ -86,13 +124,23 @@ export default function AdminZona() {
       if (editData) {
         const { error } = await supabase
           .from('zones')
-          .update({ name: form.name.trim(), description: form.description.trim() })
+          .update({ 
+            name: form.name.trim(), 
+            description: form.description.trim(),
+            latitude: form.latitude,
+            longitude: form.longitude
+          })
           .eq('id', editData.id)
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('zones')
-          .insert({ name: form.name.trim(), description: form.description.trim() })
+          .insert({ 
+            name: form.name.trim(), 
+            description: form.description.trim(),
+            latitude: form.latitude,
+            longitude: form.longitude
+          })
         if (error) throw error
       }
       setShowForm(false)
@@ -290,9 +338,53 @@ export default function AdminZona() {
                       value={form.description}
                       onChange={e => setForm({ ...form, description: e.target.value })}
                       placeholder="Tambahkan detail lokasi atau keterangan..."
-                      rows={4}
+                      rows={3}
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all resize-none text-sm shadow-sm"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 transition-colors">
+                      Pilih Lokasi di Area Kampus UTM <span className="text-red-500">*</span>
+                    </label>
+                    <div className="h-64 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-600 shadow-inner relative group">
+                      <MapContainer 
+                        center={form.latitude ? [form.latitude, form.longitude] : UTM_CENTER} 
+                        zoom={16} 
+                        maxBounds={UTM_BOUNDS}
+                        style={{ height: '100%', width: '100%', zIndex: 1 }}
+                        scrollWheelZoom={true}
+                      >
+                        <TileLayer
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                          attribution='&copy; OpenStreetMap'
+                        />
+                        <LocationMarker 
+                          position={form.latitude ? { lat: form.latitude, lng: form.longitude } : null}
+                          setPosition={(pos) => setForm({ ...form, latitude: pos.lat, longitude: pos.lng })}
+                        />
+                      </MapContainer>
+                      {!form.latitude && (
+                        <div className="absolute inset-0 z-[2] bg-slate-900/20 backdrop-blur-[1px] pointer-events-none flex items-center justify-center">
+                          <div className="bg-white/90 dark:bg-slate-800/90 px-4 py-2 rounded-full shadow-lg border border-emerald-500/30 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-emerald-500 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            </svg>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">Klik pada peta untuk pilih titik</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center justify-between px-1">
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                        * Peta dibatasi hanya di area Universitas Trunojoyo Madura
+                      </p>
+                      {form.latitude && (
+                        <span className="text-[10px] font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 px-2 py-0.5 rounded">
+                          {form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="pt-3 flex gap-3">
