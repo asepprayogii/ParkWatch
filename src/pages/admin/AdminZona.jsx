@@ -1,7 +1,32 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { useLocation } from 'react-router-dom'
+import { MapContainer, TileLayer, Marker, Circle, useMapEvents } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
+
+// Fix Leaflet marker icon issue in Vite
+import markerIcon from 'leaflet/dist/images/marker-icon.png'
+import markerShadow from 'leaflet/dist/images/marker-shadow.png'
+
+let DefaultIcon = L.icon({
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+})
+L.Marker.prototype.options.icon = DefaultIcon
+
+// Component to handle map clicks for picking location
+function LocationPicker({ position, onPositionChange }) {
+  useMapEvents({
+    click(e) {
+      onPositionChange(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return position ? <Marker position={position} /> : null
+}
 
 // Buat komponen helper kecil
 function PageTransition({ children }) {
@@ -33,7 +58,7 @@ export default function AdminZona() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editData, setEditData] = useState(null)
-  const [form, setForm] = useState({ name: '', description: '' })
+  const [form, setForm] = useState({ name: '', description: '', latitude: null, longitude: null, radius: 50 })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(null)
@@ -63,16 +88,24 @@ export default function AdminZona() {
     return () => supabase.removeChannel(channel)
   }, [])
 
+  const mapCenter = [-7.1297312, 112.7242796]
+
   const handleOpenAdd = () => {
     setEditData(null)
-    setForm({ name: '', description: '' })
+    setForm({ name: '', description: '', latitude: null, longitude: null, radius: 50 })
     setError('')
     setShowForm(true)
   }
 
   const handleOpenEdit = (zone) => {
     setEditData(zone)
-    setForm({ name: zone.name, description: zone.description ?? '' })
+    setForm({
+      name: zone.name,
+      description: zone.description ?? '',
+      latitude: zone.latitude ?? null,
+      longitude: zone.longitude ?? null,
+      radius: zone.radius ?? 50
+    })
     setError('')
     setShowForm(true)
   }
@@ -83,16 +116,23 @@ export default function AdminZona() {
     setSaving(true)
     setError('')
     try {
+      const payload = {
+        name: form.name.trim(),
+        description: form.description.trim(),
+        latitude: form.latitude,
+        longitude: form.longitude,
+        radius: form.radius || 50
+      }
       if (editData) {
         const { error } = await supabase
           .from('zones')
-          .update({ name: form.name.trim(), description: form.description.trim() })
+          .update(payload)
           .eq('id', editData.id)
         if (error) throw error
       } else {
         const { error } = await supabase
           .from('zones')
-          .insert({ name: form.name.trim(), description: form.description.trim() })
+          .insert(payload)
         if (error) throw error
       }
       setShowForm(false)
@@ -223,6 +263,22 @@ export default function AdminZona() {
                       </svg>
                       {rosterCount} Petugas
                     </span>
+                    {zone.latitude && zone.longitude ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Ditandai
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-xs font-semibold text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
+                        </svg>
+                        Belum Ditandai
+                      </span>
+                    )}
                   </div>
                 </div>
               )
@@ -235,7 +291,7 @@ export default function AdminZona() {
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-slate-900/40 dark:bg-slate-900/70 backdrop-blur-sm transition-opacity" onClick={() => setShowForm(false)} />
             <div 
-              className="relative bg-white dark:bg-slate-800 rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-transparent dark:border-slate-700 transition-colors"
+              className="relative bg-white dark:bg-slate-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden border border-transparent dark:border-slate-700 transition-colors max-h-[90vh] overflow-y-auto"
               style={{ animation: 'modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
             >
               <div className="px-6 py-5 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
@@ -293,6 +349,72 @@ export default function AdminZona() {
                       rows={4}
                       className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all resize-none text-sm shadow-sm"
                     />
+                  </div>
+
+                  {/* Map Picker Section */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 transition-colors">
+                      Lokasi di Peta
+                    </label>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Klik pada peta untuk menandai lokasi zona parkir</p>
+                    <div className="h-[250px] w-full rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-600 relative z-0">
+                      <MapContainer
+                        center={form.latitude && form.longitude ? [form.latitude, form.longitude] : mapCenter}
+                        zoom={17}
+                        scrollWheelZoom={true}
+                        className="h-full w-full"
+                        style={{ zIndex: 0 }}
+                      >
+                        <TileLayer
+                          attribution='&copy; <a href="https://osm.org">OSM</a>'
+                          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        />
+                        <LocationPicker
+                          position={form.latitude && form.longitude ? [form.latitude, form.longitude] : null}
+                          onPositionChange={(lat, lng) => setForm({ ...form, latitude: lat, longitude: lng })}
+                        />
+                        {form.latitude && form.longitude && (
+                          <Circle
+                            center={[form.latitude, form.longitude]}
+                            radius={form.radius || 50}
+                            pathOptions={{ color: '#059669', fillColor: '#059669', fillOpacity: 0.2 }}
+                          />
+                        )}
+                      </MapContainer>
+                    </div>
+                    {form.latitude && form.longitude && (
+                      <div className="mt-3 flex items-center gap-2 flex-wrap">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          📍 {form.latitude.toFixed(6)}, {form.longitude.toFixed(6)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, latitude: null, longitude: null })}
+                          className="text-xs text-red-500 hover:text-red-600 font-semibold transition-colors"
+                        >
+                          Hapus Pin
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Radius Slider */}
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 transition-colors">
+                      Radius Area ({form.radius || 50} meter)
+                    </label>
+                    <input
+                      type="range"
+                      min="20"
+                      max="200"
+                      value={form.radius || 50}
+                      onChange={e => setForm({ ...form, radius: parseInt(e.target.value) })}
+                      className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1">
+                      <span>20m</span>
+                      <span>200m</span>
+                    </div>
                   </div>
                   
                   <div className="pt-3 flex gap-3">
