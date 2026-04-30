@@ -4,6 +4,7 @@ import { getUnreadCount } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'
 import SatpamSidebar from './SatpamSidebar'
 import SatpamBottomNav from './SatpamBottomNav'
+import PageTransition from '../ui/PageTransition'
 
 export default function SatpamLayout({ title, children }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -60,10 +61,14 @@ export default function SatpamLayout({ title, children }) {
       </div>
 
       <main className={`transition-all duration-300 pt-14 pb-20 px-4 md:pt-8 md:pb-8 md:px-6 ${collapsed ? 'md:ml-16' : 'md:ml-56'}`}>
-        <div className="hidden md:block mb-6">
-          <h1 className="text-xl font-bold text-slate-800">{title}</h1>
+        <div className="max-w-5xl mx-auto">
+          <div className="hidden md:block mb-6">
+            <h1 className="text-xl font-bold text-slate-800">{title}</h1>
+          </div>
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
-        {children}
       </main>
 
       <SatpamBottomNav />

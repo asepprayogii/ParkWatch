@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Topbar from './Topbar'
 import BottomNav from './BottomNav'
 import Sidebar from './Sidebar'
+import PageTransition from '../ui/PageTransition'
 
 export default function UserLayout({ title, children }) {
   const [collapsed, setCollapsed] = useState(false)
@@ -23,10 +24,14 @@ export default function UserLayout({ title, children }) {
         transition-all duration-300
         ${collapsed ? 'md:ml-16' : 'md:ml-56'}
       `}>
-        <div className="hidden md:block mb-6">
-          <h1 className="text-xl font-bold text-slate-800">{title}</h1>
+        <div className="max-w-5xl mx-auto">
+          <div className="hidden md:block mb-6">
+            <h1 className="text-xl font-bold text-slate-800">{title}</h1>
+          </div>
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
-        {children}
       </main>
 
       {/* Bottom Nav — mobile only */}

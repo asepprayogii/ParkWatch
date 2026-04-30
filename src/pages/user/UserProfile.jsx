@@ -1,8 +1,10 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/AuthContext'
 import { logout } from '../../services/auth'
 import { supabase } from '../../lib/supabase'
+import { getUserPoints, levels } from '../../services/points'
+import LevelIcon from '../../components/ui/LevelIcon'
 import UserLayout from '../../components/layout/UserLayout'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -21,6 +23,19 @@ export default function UserProfile() {
   const [avatarLoading, setAvatarLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  // Points system
+  const [pointsData, setPointsData] = useState(null)
+  const [pointsLoading, setPointsLoading] = useState(true)
+
+  useEffect(() => {
+    if (user?.id) {
+      getUserPoints(user.id).then(data => {
+        setPointsData(data)
+        setPointsLoading(false)
+      })
+    }
+  }, [user?.id])
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -90,11 +105,13 @@ export default function UserProfile() {
     navigate('/login')
   }
 
+  const level = pointsData?.level
+
   return (
     <UserLayout title="Profil Saya">
       <div className="py-3 max-w-md mx-auto">
 
-        {/* Avatar dengan upload */}
+        {/* Avatar + Name */}
         <div className="flex flex-col items-center mb-6">
           <div className="relative mb-3">
             <div className="w-20 h-20 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg overflow-hidden">
@@ -123,10 +140,94 @@ export default function UserProfile() {
             <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
           </div>
           <h2 className="text-lg font-bold text-slate-800">{user?.full_name}</h2>
-          <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-3 py-1 rounded-full mt-1">
-            Pelapor
-          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-3 py-1 rounded-full">
+              Pelapor
+            </span>
+            {level && !pointsLoading && (
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full bg-gradient-to-r ${level.color} text-white flex items-center gap-1`}>
+                <LevelIcon name={level.icon} className="w-3.5 h-3.5" /> {level.label}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* ── Points & Level Card ── */}
+        {!pointsLoading && pointsData && (
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-5 mb-4 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-slate-400 text-xs font-medium">Total Poin</p>
+                <p className="text-3xl font-extrabold">{pointsData.totalPoints}</p>
+              </div>
+              <div className="text-right flex flex-col items-end">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><LevelIcon name={level.icon} className="w-6 h-6" /></div>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">{level.label}</p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            {level.nextLevel && (
+              <div className="mb-3">
+                <div className="flex items-center justify-between text-xs text-slate-400 mb-1.5">
+                  <span>{level.label}</span>
+                  <span className="flex items-center gap-1"><LevelIcon name={level.nextLevel.icon} className="w-3 h-3" /> {level.nextLevel.label} ({level.nextLevel.min} poin)</span>
+                </div>
+                <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full bg-gradient-to-r ${level.color} rounded-full transition-all duration-700`}
+                    style={{ width: `${level.progress}%` }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500 mt-1">{level.nextLevel.min - pointsData.totalPoints} poin lagi ke level berikutnya</p>
+              </div>
+            )}
+
+            {/* Breakdown */}
+            <div className="grid grid-cols-3 gap-3 pt-3 border-t border-slate-700">
+              <div className="text-center">
+                <p className="text-lg font-bold">{pointsData.totalReports}</p>
+                <p className="text-xs text-slate-400">Laporan</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-green-400">{pointsData.resolvedReports}</p>
+                <p className="text-xs text-slate-400">Selesai</p>
+              </div>
+              <div className="text-center">
+                <p className="text-lg font-bold text-amber-400">+{pointsData.breakdown.fromResolved}</p>
+                <p className="text-xs text-slate-400">Bonus</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {pointsLoading && (
+          <div className="bg-slate-900 rounded-2xl p-5 mb-4 animate-pulse h-48" />
+        )}
+
+        {/* Level Tiers Info */}
+        {!pointsLoading && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
+            <h3 className="font-semibold text-slate-700 text-sm mb-3">Level & Badges</h3>
+            <div className="space-y-2">
+              {levels.map((lvl) => {
+                const isCurrent = level?.label === lvl.label
+                return (
+                  <div key={lvl.label} className={`flex items-center gap-3 px-3 py-2 rounded-xl transition ${isCurrent ? 'bg-blue-50 border border-blue-200' : 'opacity-60'}`}>
+                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${lvl.color} flex items-center justify-center shrink-0`}><LevelIcon name={lvl.icon} className="w-4 h-4 text-white" /></div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${isCurrent ? 'text-blue-700' : 'text-slate-600'}`}>{lvl.label}</p>
+                      <p className="text-xs text-slate-400">{lvl.min}+ poin</p>
+                    </div>
+                    {isCurrent && (
+                      <span className="text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full font-medium">Kamu</span>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Info Card */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-4">
@@ -186,18 +287,18 @@ export default function UserProfile() {
           )}
         </div>
 
-        {/* Stats */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-4">
-          <h3 className="font-semibold text-slate-700 text-sm mb-4">Statistik Laporan</h3>
-          <div className="grid grid-cols-3 gap-3">
+        {/* Cara Mendapat Poin */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-4">
+          <h3 className="font-semibold text-slate-700 text-sm mb-3">Cara Mendapat Poin</h3>
+          <div className="space-y-2">
             {[
-              { label: 'Total', value: 0, color: 'text-blue-600' },
-              { label: 'Diproses', value: 0, color: 'text-yellow-600' },
-              { label: 'Selesai', value: 0, color: 'text-green-600' },
-            ].map(stat => (
-              <div key={stat.label} className="text-center">
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{stat.label}</p>
+              { icon: 'document', text: 'Buat laporan baru', poin: '+5 poin', iconColor: 'text-blue-500 bg-blue-100' },
+              { icon: 'check_circle', text: 'Laporan diselesaikan satpam', poin: '+10 bonus', iconColor: 'text-green-500 bg-green-100' },
+            ].map(item => (
+              <div key={item.text} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-xl">
+                <div className={`w-8 h-8 rounded-lg ${item.iconColor} flex items-center justify-center shrink-0`}><LevelIcon name={item.icon} className="w-4 h-4" /></div>
+                <span className="text-sm text-slate-600 flex-1">{item.text}</span>
+                <span className="text-xs font-bold text-green-600">{item.poin}</span>
               </div>
             ))}
           </div>

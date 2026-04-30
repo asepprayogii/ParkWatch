@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 export async function getNotifications(userId) {
   const { data, error } = await supabase
     .from('notifications')
-    .select(`*, reports (id, plate_number, zones (name))`)
+   .select(`*, reports (id, plate_number, zones (name))`)
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -57,23 +57,28 @@ export async function sendNotificationToUser({ userId, reportId, plateNumber, st
   if (error) throw error
 }
 
+/**
+ * Kirim notifikasi ke satpam yang bertugas di zona ini
+ * LOGIKA BARU: Cukup cek apakah satpam is_active di zone_id tersebut
+ */
 export async function sendNotificationToSatpam({ zoneId, reportId, plateNumber }) {
   try {
-    const today = new Date().toISOString().split('T')[0]
-
+    // Ambil semua satpam yang AKTIF di zona ini (tanpa filter hari/shift)
     const { data: roster, error } = await supabase
       .from('roster')
       .select('satpam_id')
       .eq('zone_id', zoneId)
-      .eq('date', today)
       .eq('is_active', true)
 
     if (error) throw error
-    if (!roster || roster.length === 0) return
+    if (!roster || roster.length === 0) {
+      console.log('⚠️ Tidak ada satpam aktif di zona ini:', zoneId)
+      return
+    }
 
     // Deduplikasi satpam_id
     const uniqueSatpamIds = [...new Set(roster.map(r => r.satpam_id))]
-
+    
     const notifications = uniqueSatpamIds.map(satpamId => ({
       user_id: satpamId,
       type: 'new_report',
@@ -86,6 +91,7 @@ export async function sendNotificationToSatpam({ zoneId, reportId, plateNumber }
       .from('notifications')
       .insert(notifications)
     if (insertError) throw insertError
+    
   } catch (err) {
     console.error('sendNotificationToSatpam error:', err)
   }
