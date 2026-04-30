@@ -30,13 +30,13 @@ function PageTransition({ children }) {
 // Stat Card Component
 function StatCard({ label, value, icon, color }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center gap-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
+    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 flex items-center gap-4 transition-colors">
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${color} dark:bg-slate-700/50`}>
         {icon}
       </div>
       <div>
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">{label}</p>
-        <p className="text-xl font-bold text-slate-800 mt-0.5">{value}</p>
+        <p className="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">{label}</p>
+        <p className="text-xl font-bold text-slate-800 dark:text-white mt-0.5 transition-colors">{value}</p>
       </div>
     </div>
   )
@@ -45,7 +45,7 @@ function StatCard({ label, value, icon, color }) {
 // Section Title Component
 function SectionTitle({ children }) {
   return (
-    <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+    <h3 className="text-sm font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2 transition-colors">
       <div className="w-1 h-4 bg-blue-600 rounded-full" />
       {children}
     </h3>
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
 
           {/* Plat Paling Sering */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
             <SectionTitle>Plat Paling Sering Melanggar</SectionTitle>
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
@@ -246,7 +246,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Zona Paling Bermasalah */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
             <SectionTitle>Zona Paling Bermasalah</SectionTitle>
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Pelapor Paling Aktif */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
             <SectionTitle>Pelapor Paling Aktif</SectionTitle>
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
@@ -307,7 +307,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Satpam Paling Aktif */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
             <SectionTitle>Satpam Paling Aktif</SectionTitle>
             {loading ? (
               <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-10 bg-slate-100 rounded-xl animate-pulse" />)}</div>
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Laporan Terbaru */}
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
           <SectionTitle>Laporan Terbaru</SectionTitle>
           {loading ? (
             <div className="space-y-2">{[1,2,3].map(i => <div key={i} className="h-14 bg-slate-100 rounded-xl animate-pulse" />)}</div>
@@ -353,17 +353,17 @@ export default function AdminDashboard() {
               {recentReports.map(report => {
                 const status = statusConfig[report.status] ?? statusConfig.pending
                 return (
-                  <div key={report.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 transition">
+                  <div key={report.id} className="flex items-center justify-between px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="bg-slate-900 text-white font-mono text-xs px-2 py-1 rounded-lg tracking-wider shrink-0">
+                      <div className="bg-slate-900 dark:bg-slate-950 text-white font-mono text-xs px-2 py-1 rounded-lg tracking-wider shrink-0">
                         {report.plate_number ?? '?????'}
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-slate-700">{report.zones?.name ?? '-'}</p>
-                        <p className="text-xs text-slate-400">{report.users?.full_name} · {timeAgo(report.created_at)}</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors">{report.zones?.name ?? '-'}</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 transition-colors">{report.users?.full_name} · {timeAgo(report.created_at)}</p>
                       </div>
                     </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${status.color}`}>
+                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${status.color} dark:bg-slate-800/50 dark:border-slate-600 transition-colors`}>
                       {status.label}
                     </span>
                   </div>

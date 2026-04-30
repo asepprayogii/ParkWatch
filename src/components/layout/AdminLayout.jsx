@@ -8,8 +8,8 @@ export default function AdminLayout({ title, children }) {
 
   return (
     <div
-      className="min-h-screen"
-      style={{ background: '#f8fafc', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+      className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300"
+      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
       {/* Sidebar — desktop only */}
       <AdminSidebar onCollapse={setCollapsed} />
@@ -35,8 +35,8 @@ export default function AdminLayout({ title, children }) {
           <div className="hidden md:flex items-start justify-between mb-6">
             <div>
               <h1
-                className="text-xl font-bold"
-                style={{ color: '#0f172a', letterSpacing: '-0.4px' }}
+                className="text-xl font-bold text-slate-900 dark:text-white transition-colors duration-300"
+                style={{ letterSpacing: '-0.4px' }}
               >
                 {title}
               </h1>

@@ -146,13 +146,13 @@ export default function AdminPengaturan() {
         <div className="max-w-2xl space-y-5">
 
           {/* ── Profil Admin ── */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-800 mb-4">Profil Admin</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-4 transition-colors">Profil Admin</h3>
 
             {/* Avatar */}
-            <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100">
+            <div className="flex items-center gap-4 mb-5 pb-5 border-b border-slate-100 dark:border-slate-700 transition-colors">
               <div className="relative">
-                <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center overflow-hidden shadow">
+                <div className="w-16 h-16 rounded-2xl bg-blue-500 flex items-center justify-center overflow-hidden shadow-lg border-2 border-white dark:border-slate-700">
                   {user?.avatar_url ? (
                     <img src={user.avatar_url} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -162,7 +162,7 @@ export default function AdminPengaturan() {
                   )}
                 </div>
                 <button onClick={() => avatarRef.current.click()} disabled={avatarLoading}
-                  className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow border-2 border-white">
+                  className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800 hover:scale-110 transition-transform">
                   {avatarLoading ? (
                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
@@ -175,109 +175,109 @@ export default function AdminPengaturan() {
                 <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
               </div>
               <div>
-                <p className="font-semibold text-slate-800">{user?.full_name}</p>
-                <p className="text-sm text-slate-400">{user?.email}</p>
-                <span className="text-xs bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded-full mt-1 inline-block">Admin</span>
+                <p className="font-semibold text-slate-800 dark:text-slate-200 transition-colors">{user?.full_name}</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500 transition-colors">{user?.email}</p>
+                <span className="text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold px-2 py-0.5 rounded-full mt-1 inline-block uppercase tracking-wider">Admin</span>
               </div>
             </div>
 
             {profileSuccess && (
-              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{profileSuccess}</div>
+              <div className="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-xl text-sm text-green-600 dark:text-green-400 transition-colors">{profileSuccess}</div>
             )}
             {profileError && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{profileError}</div>
+              <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl text-sm text-red-600 dark:text-red-400 transition-colors">{profileError}</div>
             )}
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Nama Lengkap</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Nama Lengkap</label>
                 <input type="text" value={profileForm.full_name}
                   onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">No. WhatsApp</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">No. WhatsApp</label>
                 <input type="tel" value={profileForm.phone}
                   onChange={e => setProfileForm({ ...profileForm, phone: e.target.value })}
                   placeholder="08xxxxxxxxxx"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <button type="submit" disabled={profileLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 text-sm disabled:opacity-50">
                 {profileLoading ? 'Menyimpan...' : 'Simpan Profil'}
               </button>
             </form>
           </div>
 
           {/* ── Ganti Password ── */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-800 mb-4">Ganti Password</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-4 transition-colors">Ganti Password</h3>
 
             {passwordSuccess && (
-              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">{passwordSuccess}</div>
+              <div className="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-xl text-sm text-green-600 dark:text-green-400 transition-colors">{passwordSuccess}</div>
             )}
             {passwordError && (
-              <div className="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">{passwordError}</div>
+              <div className="mb-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/30 rounded-xl text-sm text-red-600 dark:text-red-400 transition-colors">{passwordError}</div>
             )}
 
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Password Baru</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Password Baru</label>
                 <input type="password" value={passwordForm.new_password}
                   onChange={e => { setPasswordForm({ ...passwordForm, new_password: e.target.value }); setPasswordError('') }}
                   placeholder="Minimal 6 karakter"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Konfirmasi Password Baru</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Konfirmasi Password Baru</label>
                 <input type="password" value={passwordForm.confirm_password}
                   onChange={e => { setPasswordForm({ ...passwordForm, confirm_password: e.target.value }); setPasswordError('') }}
                   placeholder="Ulangi password baru"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <button type="submit" disabled={passwordLoading}
-                className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50">
+                className="w-full bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white font-semibold py-3 rounded-xl transition shadow-lg text-sm disabled:opacity-50">
                 {passwordLoading ? 'Mengubah...' : 'Ubah Password'}
               </button>
             </form>
           </div>
 
           {/* ── Informasi Aplikasi ── */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
-            <h3 className="font-bold text-slate-800 mb-1">Informasi Aplikasi</h3>
-            <p className="text-xs text-slate-400 mb-4">Ditampilkan di halaman login dan beranda</p>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-white mb-1 transition-colors">Informasi Aplikasi</h3>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4 transition-colors">Ditampilkan di halaman login dan beranda</p>
 
             {appSuccess && (
-              <div className="mb-4 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-600">
+              <div className="mb-4 px-4 py-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/30 rounded-xl text-sm text-green-600 dark:text-green-400 transition-colors">
                 Informasi aplikasi berhasil disimpan
               </div>
             )}
 
             <form onSubmit={handleSaveApp} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Nama Aplikasi / Tempat</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Nama Aplikasi / Tempat</label>
                 <input type="text" value={appForm.app_name}
                   onChange={e => setAppForm({ ...appForm, app_name: e.target.value })}
                   placeholder="contoh: ParkWatch Kampus ABC"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Lokasi</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Lokasi</label>
                 <input type="text" value={appForm.app_location}
                   onChange={e => setAppForm({ ...appForm, app_location: e.target.value })}
                   placeholder="contoh: Universitas XYZ, Bandung"
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all bg-white dark:bg-slate-900 text-sm" />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">Deskripsi Singkat</label>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-400 mb-1 transition-colors">Deskripsi Singkat</label>
                 <textarea value={appForm.app_description}
                   onChange={e => setAppForm({ ...appForm, app_description: e.target.value })}
                   placeholder="contoh: Platform pelaporan parkir liar berbasis komunitas"
                   rows={3}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition resize-none text-sm" />
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none bg-white dark:bg-slate-900 text-sm" />
               </div>
               <button type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm">
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-blue-500/20 text-sm">
                 Simpan Informasi
               </button>
             </form>

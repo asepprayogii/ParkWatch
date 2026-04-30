@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../../services/auth";
 import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
-
+import { useTheme } from "../../store/ThemeContext";
 const navItems = [
   {
     to: "/admin/dashboard",
@@ -144,6 +144,7 @@ export default function AdminSidebar({ onCollapse }) {
   const [badgeCounts, setBadgeCounts] = useState({ pending: 0 });
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   // ✅ Fetch badge counts dari berbagai tabel
   useEffect(() => {
@@ -314,8 +315,24 @@ export default function AdminSidebar({ onCollapse }) {
           })}
         </nav>
 
-        {/* ── Logout ── */}
-        <div className="px-2 py-3" style={{ borderTop: "1px solid rgba(55,138,221,0.15)" }}>
+        {/* ── Theme & Logout ── */}
+        <div className="px-2 py-3 flex flex-col gap-1" style={{ borderTop: "1px solid rgba(55,138,221,0.15)" }}>
+          <div className="relative" onMouseEnter={() => setHoveredItem("theme")} onMouseLeave={() => setHoveredItem(null)}>
+            <button onClick={toggleTheme} className="pw-nav-item w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200" style={{ padding: "9px 10px", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start", color: "rgba(176,210,255,0.65)", border: "1px solid transparent", background: "transparent", cursor: "pointer" }}>
+              {theme === 'dark' ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+              {!collapsed && <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>}
+            </button>
+            {collapsed && hoveredItem === "theme" && <div style={{ ...S.tooltip, color: "#f0f6ff" }}>{theme === 'dark' ? 'Terang' : 'Gelap'}</div>}
+          </div>
+
           <div className="relative" onMouseEnter={() => setHoveredItem("logout")} onMouseLeave={() => setHoveredItem(null)}>
             <button onClick={handleLogout} className="pw-logout w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200" style={{ padding: "9px 10px", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start", color: "rgba(252,99,99,0.65)", border: "1px solid transparent", background: "transparent", cursor: "pointer" }}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
