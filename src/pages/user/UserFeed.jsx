@@ -32,7 +32,7 @@ function ReportCard({ report, onClick, onPhotoClick }) {
           <img src={report.photo_url} alt="laporan" className="w-full aspect-video object-cover" />
           <button
             onClick={(e) => { e.stopPropagation(); onPhotoClick(report.photo_url) }}
-            className="absolute bottom-2 right-2 bg-black/40 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs flex items-center gap-1"
+            className="absolute bottom-2 right-2 bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 hover:bg-black/80 transition"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
@@ -221,7 +221,7 @@ export default function UserFeed() {
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* Detail Modal - PERBAIKAN TAMPILAN */}
       {selectedReport && (
         <ReportDetailModal
           report={selectedReport}
@@ -229,7 +229,7 @@ export default function UserFeed() {
         />
       )}
 
-      {/* Photo Lightbox */}
+      {/* Photo Lightbox - PERBAIKAN TAMPILAN */}
       {lightboxPhoto && (
         <ImageLightbox
           src={lightboxPhoto}
