@@ -263,7 +263,7 @@ export default function RegisterPage() {
               <img src="/logo.png" alt="ParkWatch" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-3xl font-bold">
-              <span className="text-white">Parkir</span>
+              <span className="text-white">Park</span>
               <span className="text-blue-400">Watch</span>
             </h1>
             <p className="text-slate-300 text-sm mt-1">Bergabung sekarang, bantu jaga keamanan</p>
@@ -389,7 +389,7 @@ export default function RegisterPage() {
                   <img src="/logo.png" alt="ParkWatch" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">
-                  <span className="text-white">Parkir</span>
+                  <span className="text-white">Park</span>
                   <span className="text-blue-400">Watch</span>
                 </span>
               </div>
@@ -446,7 +446,7 @@ export default function RegisterPage() {
                   <img src="/logo.png" alt="ParkWatch" className="w-12 h-12 lg:w-14 lg:h-14 object-contain" />
                 </div>
                 <h1 className="text-xl lg:text-2xl font-bold">
-                  <span className="text-white">Parkir</span>
+                  <span className="text-white">Park</span>
                   <span className="text-blue-400">Watch</span>
                 </h1>
                 <p className="text-slate-400 text-[10px] lg:text-xs mt-1">Sistem Monitoring Parkir</p>

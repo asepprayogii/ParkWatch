@@ -236,7 +236,7 @@ export default function LoginPage() {
               <img src="/logo.png" alt="ParkWatch" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-3xl font-bold">
-              <span className="text-white">Parkir</span>
+              <span className="text-white">Park</span>
               <span className="text-blue-400">Watch</span>
             </h1>
             <p className="text-slate-300 text-sm mt-1">Pantau. Amankan. Kendaraan Anda.</p>
@@ -331,7 +331,7 @@ export default function LoginPage() {
                   <img src="/logo.png" alt="ParkWatch" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">
-                  <span className="text-white">Parkir</span>
+                  <span className="text-white">Park</span>
                   <span className="text-blue-400">Watch</span>
                 </span>
               </div>
