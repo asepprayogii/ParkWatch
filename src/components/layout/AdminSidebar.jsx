@@ -103,12 +103,22 @@ const S = {
 };
 
 export default function AdminSidebar({ onCollapse }) {
-  const [collapsed, setCollapsed] = useState(false);
+  // ✅ Load collapsed state from localStorage
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem('admin-sidebar-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [hoveredItem, setHoveredItem] = useState(null);
   const [badgeCounts, setBadgeCounts] = useState({ pending: 0 });
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
+
+  // ✅ Persist collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('admin-sidebar-collapsed', JSON.stringify(collapsed));
+    onCollapse?.(collapsed);
+  }, [collapsed, onCollapse]);
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -131,9 +141,7 @@ export default function AdminSidebar({ onCollapse }) {
   }, []);
 
   const handleToggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    onCollapse?.(next);
+    setCollapsed(prev => !prev);
   };
 
   const handleLogout = async () => {
@@ -160,11 +168,12 @@ export default function AdminSidebar({ onCollapse }) {
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full z-50 overflow-hidden" style={S.sidebar(collapsed, theme)}>
         <div style={S.shineTop} />
 
-        {/* Logo + Toggle */}
-        <div className="flex items-center h-14 px-3" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, justifyContent: collapsed ? "center" : "space-between" }}>
+        {/* Logo + Toggle - SELALU MUNCUL */}
+        <div className="flex items-center h-14 px-3 border-b" style={{ borderColor: theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0', justifyContent: 'center' }}>
+          
+          {/* ✅ Logo ParkWatch - HANYA MUNCUL SAAT EXPANDED */}
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
-              {/* ✅ LOGO DARI PUBLIC /logo.png */}
               <img src="/logo.png" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className={cn("font-bold text-sm leading-none tracking-tight", theme === 'dark' ? "text-white" : "text-slate-900")}>ParkWatch</p>
@@ -172,15 +181,28 @@ export default function AdminSidebar({ onCollapse }) {
               </div>
             </div>
           )}
-          <button onClick={handleToggle} className="pw-toggle w-7 h-7 flex items-center justify-center rounded-lg shrink-0 transition-all duration-200" style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.18)", color: "rgba(176,210,255,0.5)", cursor: "pointer" }}>
+
+          {/* ✅ Toggle Button - SELALU MUNCUL (di kanan) */}
+          <button
+            onClick={handleToggle}
+            className="pw-toggle w-7 h-7 flex items-center justify-center rounded-lg shrink-0 transition-all duration-200 ml-auto"
+            style={{
+              background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.18)",
+              color: "rgba(176,210,255,0.5)", cursor: "pointer",
+            }}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              {collapsed ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />}
+              {collapsed 
+                ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                : <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              }
             </svg>
           </button>
         </div>
 
         {/* User Info */}
-        <div className="px-3 py-3 flex items-center overflow-hidden" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start" }}>
+        <div className="px-3 py-3 flex items-center border-b" style={{ borderColor: theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0', gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start" }}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={S.avatarRing}>
             <span className="text-sm font-bold text-white">{initials}</span>
           </div>
@@ -198,7 +220,7 @@ export default function AdminSidebar({ onCollapse }) {
             const badgeValue = item.showBadge && item.badgeType ? badgeCounts[item.badgeType] : 0;
             const displayBadge = formatBadge(badgeValue);
             return (
-              <div key={item.to} className="relative" style={{ position: "relative" }}>
+              <div key={item.to} className="relative" style={{ position: "relative" }} onMouseEnter={() => setHoveredItem(item.to)} onMouseLeave={() => setHoveredItem(null)}>
                 <NavLink
                   to={item.to}
                   title={collapsed ? item.label : ""}
@@ -211,8 +233,6 @@ export default function AdminSidebar({ onCollapse }) {
                     gap: collapsed ? 0 : "10px",
                     ...(isActive && { boxShadow: "0 0 18px rgba(6,182,212,0.1), inset 0 0 0 1px rgba(255,255,255,0.04)" }),
                   })}
-                  onMouseEnter={() => setHoveredItem(item.to)}
-                  onMouseLeave={() => setHoveredItem(null)}
                 >
                   {({ isActive }) => (
                     <>
@@ -237,7 +257,7 @@ export default function AdminSidebar({ onCollapse }) {
         </nav>
 
         {/* Theme & Logout */}
-        <div className="px-2 py-3 flex flex-col gap-1" style={{ borderTop: "1px solid rgba(55,138,221,0.15)" }}>
+        <div className="px-2 py-3 flex flex-col gap-1 border-t" style={{ borderColor: theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0' }}>
           <div className="relative" onMouseEnter={() => setHoveredItem("theme")} onMouseLeave={() => setHoveredItem(null)}>
             <button onClick={toggleTheme} className="pw-nav-item w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200" style={{ padding: "9px 10px", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start", color: "rgba(176,210,255,0.65)", border: "1px solid transparent", background: "transparent", cursor: "pointer" }}>
               {theme === 'dark' ? (
