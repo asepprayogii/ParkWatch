@@ -169,11 +169,8 @@ export default function Sidebar({ onCollapse }) {
         >
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
-              <div style={S.logoIcon}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
+              {/* ✅ LOGO DARI PUBLIC /logo.png */}
+              <img src="/logo.png" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className="font-bold text-sm leading-none tracking-tight"
                   style={{ color: theme === 'dark' ? '#fff' : '#0f172a' }}>

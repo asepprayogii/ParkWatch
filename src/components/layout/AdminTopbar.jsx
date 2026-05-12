@@ -1,5 +1,7 @@
 import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
+import { logout } from '../../services/auth'
+import { useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
@@ -9,58 +11,49 @@ function cn(...inputs) {
 
 export default function AdminTopbar({ title }) {
   const { user } = useAuth()
-
-  const initials = (user?.full_name?.charAt(0) || 'A').toUpperCase()
   const { theme, toggleTheme } = useTheme()
+  const navigate = useNavigate()
+  const initials = (user?.full_name?.charAt(0) || 'A').toUpperCase()
+
+  const handleLogout = async () => {
+    await logout()
+    navigate("/login")
+  }
 
   return (
     <>
       <style>{`
-        .pw-topbar {
-          background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'};
-          border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'};
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .pw-topbar::after {
-          content: '';
-          position: absolute;
-          bottom: 0; left: 0; right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(34,211,238,0.2), transparent);
+        .pw-topbar { 
+          background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'}; 
+          border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'}; 
+          font-family: 'Plus Jakarta Sans', sans-serif; 
+        } 
+        .pw-topbar::after { 
+          content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; 
+          background: linear-gradient(90deg, transparent, rgba(34,211,238,0.2), transparent); 
         }
       `}</style>
 
       <div className="pw-topbar fixed top-0 left-0 right-0 z-50 px-4 h-14 flex items-center justify-between">
-        {/* Logo */}
+        
+        {/* ✅ Logo + Label Admin (TETAP ADA) */}
         <div className="flex items-center gap-2">
-          <div
-            className="w-7 h-7 flex items-center justify-center shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #185FA5, #06B6D4)',
-              borderRadius: '8px',
-              boxShadow: '0 0 12px rgba(6,182,212,0.3)',
-            }}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
           <div>
-            <p className={cn("font-bold text-sm leading-none", theme === 'dark' ? "text-white" : "text-slate-900")} style={{ letterSpacing: '-0.3px' }}>ParkWatch</p>
-            <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Admin</p>
+            <p className={cn("font-bold text-sm leading-none", theme === 'dark' ? "text-white" : "text-slate-900")} style={{ letterSpacing: '-0.3px' }}>
+              ParkWatch
+            </p>
+            <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              Admin
+            </p>
           </div>
         </div>
 
-        {/* Title — centered */}
-        <h1
-          className={cn("absolute left-1/2 -translate-x-1/2 font-bold text-sm", theme === 'dark' ? "text-white" : "text-slate-900")}
-          style={{ letterSpacing: '-0.2px' }}
-        >
-          {title}
-        </h1>
+        {/* ❌ Title tengah DIHAPUS */}
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          {/* Theme toggle */}
           <button 
             onClick={toggleTheme}
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-slate-800"
@@ -77,9 +70,21 @@ export default function AdminTopbar({ title }) {
             )}
           </button>
           
-          {/* Avatar */}
+          {/* ✅ MOBILE: Logout Icon */}
+          <button 
+            onClick={handleLogout}
+            className="md:hidden w-8 h-8 rounded-full flex items-center justify-center shrink-0 hover:bg-red-500/10 transition-colors"
+            style={{ color: theme === 'dark' ? 'rgba(252,99,99,0.8)' : 'rgba(239,68,68,0.7)' }}
+            title="Keluar"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
+
+          {/* ✅ DESKTOP: Avatar */}
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            className="hidden md:flex w-8 h-8 rounded-full flex items-center justify-center shrink-0"
             style={{
               background: 'linear-gradient(135deg, #185FA5, #22D3EE)',
               boxShadow: '0 0 10px rgba(34,211,238,0.25)',

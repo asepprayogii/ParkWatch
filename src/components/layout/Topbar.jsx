@@ -14,7 +14,6 @@ export default function Topbar({ title }) {
   useEffect(() => {
     if (!user) return
     getUnreadCount(user.id).then(setUnread)
-
     const channel = supabase
       .channel('topbar-notif-count')
       .on('postgres_changes', {
@@ -22,7 +21,6 @@ export default function Topbar({ title }) {
         filter: `user_id=eq.${user.id}`
       }, () => getUnreadCount(user.id).then(setUnread))
       .subscribe()
-
     return () => supabase.removeChannel(channel)
   }, [user])
 
@@ -31,55 +29,37 @@ export default function Topbar({ title }) {
   return (
     <>
       <style>{`
-        .pw-user-topbar {
-          background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'};
-          border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'};
-          font-family: 'Plus Jakarta Sans', sans-serif;
-        }
-        .pw-user-topbar::after {
-          content: '';
-          position: absolute;
-          bottom: 0; left: 0; right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(34,211,238,0.2), transparent);
-        }
-        @keyframes pw-notif-pulse {
-          0%,100% { box-shadow: 0 0 6px rgba(239,68,68,0.4); }
-          50%      { box-shadow: 0 0 12px rgba(239,68,68,0.7); }
+        .pw-user-topbar { 
+          background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'}; 
+          border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'}; 
+          font-family: 'Plus Jakarta Sans', sans-serif; 
+        } 
+        .pw-user-topbar::after { 
+          content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; 
+          background: linear-gradient(90deg, transparent, rgba(34,211,238,0.2), transparent); 
+        } 
+        @keyframes pw-notif-pulse { 
+          0%,100% { box-shadow: 0 0 6px rgba(239,68,68,0.4); } 
+          50% { box-shadow: 0 0 12px rgba(239,68,68,0.7); } 
         }
       `}</style>
 
       <div className="pw-user-topbar fixed top-0 left-0 right-0 z-50 px-4 h-14 flex items-center justify-between relative">
-        {/* Logo */}
+        
+        {/* ✅ Logo + Label User (TETAP ADA) */}
         <div className="flex items-center gap-2">
-          <div style={{
-            background: 'linear-gradient(135deg, #185FA5, #06B6D4)',
-            boxShadow: '0 0 12px rgba(6,182,212,0.3)',
-            borderRadius: '8px',
-            width: '28px', height: '28px',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          }}>
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-          </div>
+          <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
           <div>
-            <p className="font-bold text-sm leading-none"
-              style={{ color: theme === 'dark' ? '#fff' : '#0f172a', letterSpacing: '-0.3px' }}>
+            <p className="font-bold text-sm leading-none" style={{ color: theme === 'dark' ? '#fff' : '#0f172a', letterSpacing: '-0.3px' }}>
               ParkWatch
             </p>
-            <p className="leading-none mt-0.5"
-              style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
               User
             </p>
           </div>
         </div>
 
-        {/* Title — centered */}
-        <h1 className="absolute left-1/2 -translate-x-1/2 font-bold text-sm"
-          style={{ color: theme === 'dark' ? '#fff' : '#0f172a', letterSpacing: '-0.2px' }}>
-          {title}
-        </h1>
+        {/* ❌ Title tengah DIHAPUS (tidak lagi dirender) */}
 
         {/* Actions */}
         <div className="flex items-center gap-2">
