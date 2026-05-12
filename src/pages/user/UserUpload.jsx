@@ -3,12 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/AuthContext";
-import { createReport, uploadPhoto, getZones } from "../../services/reports";
+// ✅ GANTI IMPORT: pakai fungsi dengan notifikasi WA
+import { createReportWithNotification, uploadPhoto, getZones } from "../../services/reports";
 import { detectPlateWithAPI, validateIndonesianPlate } from "../../services/plateDetection";
 import UserLayout from "../../components/layout/UserLayout";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import { sendNotificationToSatpam } from "../../services/notifications";
 
 export default function UserUpload() {
   const { user } = useAuth();
@@ -46,24 +46,20 @@ export default function UserUpload() {
     setDetectionError("");
     setForm((f) => ({ ...f, plate_number: "" }));
 
-    // Deteksi plat nomor
     setDetecting(true);
     setDetectionProgress(0);
     
     try {
-      // Simulasi progress
       const progressInterval = setInterval(() => {
         setDetectionProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
-      // ✅ detectPlateWithAPI sekarang return STRING atau null
       const plateNumber = await detectPlateWithAPI(file);
       
       clearInterval(progressInterval);
       setDetectionProgress(100);
 
       if (plateNumber) {
-        // ✅ Langsung set string yang sudah diformat
         setForm((f) => ({ ...f, plate_number: plateNumber }));
         setTimeout(() => {
           setDetecting(false);
@@ -110,7 +106,6 @@ export default function UserUpload() {
       return;
     }
 
-    // ✅ Validasi & format ulang untuk keamanan
     const validatedPlate = validateIndonesianPlate(form.plate_number);
     if (!validatedPlate) {
       setError("Format plat nomor tidak valid. Contoh: B 1234 ABC");
@@ -121,18 +116,14 @@ export default function UserUpload() {
     setError("");
     try {
       const photo_url = await uploadPhoto(photo, user.id);
-      const report = await createReport({
+      
+      // ✅ GANTI: pakai createReportWithNotification
+      const report = await createReportWithNotification({
         user_id: user.id,
         plate_number: validatedPlate.toUpperCase(),
         zone_id: form.zone_id,
         photo_url,
         description: form.description,
-      });
-
-      await sendNotificationToSatpam({
-        zoneId: form.zone_id,
-        reportId: report.id,
-        plateNumber: validatedPlate.toUpperCase(),
       });
 
       navigate("/user/feed");

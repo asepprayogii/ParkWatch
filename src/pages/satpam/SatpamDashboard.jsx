@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import SatpamLayout from "../../components/layout/SatpamLayout";
-import { sendNotificationToUser } from "../../services/notifications";
+import { updateReportStatusWithNotification } from "../../services/reports";
 import ReportDetailModal from "../../components/ui/ReportDetailModal";
 
 const statusConfig = {
@@ -22,180 +22,208 @@ function timeAgo(dateStr) {
 export default function SatpamDashboard() {
   const { user } = useAuth();
   const [reports, setReports] = useState([]);
-  const [todayRoster, setTodayRoster] = useState(null);
+  const [activeZone, setActiveZone] = useState(null);
+  const [zoneName, setZoneName] = useState("");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
 
-  // Evidence upload
+  // Evidence modal state
   const [evidenceModal, setEvidenceModal] = useState(null);
   const [evidencePhoto, setEvidencePhoto] = useState(null);
-  const [evidenceNote, setEvidenceNote] = useState('');
+  const [evidenceNote, setEvidenceNote] = useState("");
   const [evidenceUploading, setEvidenceUploading] = useState(false);
-  const fileInputRef = useRef(null);
 
+  // ✅ FETCH DATA: Roster + Reports
   const fetchData = useCallback(async () => {
+    if (!user?.id) return;
+    
     try {
-      // Cari roster aktif milik satpam ini (TANPA filter hari)
-      const { data: roster, error: rosterError } = await supabase
+      // 1. Ambil roster aktif satpam ini
+      const { data: rosterData, error: rosterError } = await supabase
         .from("roster")
-        .select("*, zones(id, name)")
+        .select("zone_id, is_active, shift")
         .eq("satpam_id", user.id)
         .eq("is_active", true)
-        .limit(1) // Ambil 1 saja (asumsi satpam cuma pegang 1 zona aktif)
+        .limit(1);
 
-      if (rosterError) throw rosterError
+      if (rosterError) {
+        console.error("Roster query error:", rosterError);
+      }
+
+      const activeRoster = Array.isArray(rosterData) && rosterData.length > 0 
+        ? rosterData[0] 
+        : null;
       
-      // Simpan data roster aktif (bisa null jika belum di-assign)
-      const activeRoster = roster?.[0] || null
-      setTodayRoster(activeRoster)
-
-      // Jika ada zona aktif, fetch laporannya
       if (activeRoster?.zone_id) {
+        setActiveZone(activeRoster.zone_id);
+
+        // 2. Ambil nama zona
+        const { data: zoneData } = await supabase
+          .from("zones")
+          .select("name")
+          .eq("id", activeRoster.zone_id)
+          .single();
+        
+        if (zoneData?.name) {
+          setZoneName(zoneData.name);
+        }
+
+        // 3. Fetch reports untuk zona ini
         const { data: reportsData, error: reportsError } = await supabase
           .from("reports")
-          .select("*, user_id, users(full_name), zones(name)")
+          .select(`
+            *,
+            users (full_name, phone),
+            zones (name)
+          `)
           .eq("zone_id", activeRoster.zone_id)
           .neq("status", "resolved")
-          .order("created_at", { ascending: false })
-        
-        if (reportsError) throw reportsError
-        setReports(reportsData ?? [])
+          .order("created_at", { ascending: false });
+
+        if (reportsError) {
+          console.error("Reports query error:", reportsError);
+        }
+
+        setReports(Array.isArray(reportsData) ? reportsData : []);
       } else {
-        setReports([])
+        setActiveZone(null);
+        setZoneName("");
+        setReports([]);
       }
     } catch (err) {
       console.error("fetchData error:", err);
     } finally {
       setLoading(false);
     }
-  }, [user.id]);
+  }, [user?.id]);
 
+  // ✅ INITIAL FETCH
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
+  // ✅ REALTIME SUBSCRIPTION
   useEffect(() => {
+    if (!user?.id || !activeZone) return;
+    
     const channel = supabase
-      .channel("satpam-reports")
-      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, fetchData)
+      .channel(`satpam-reports-${activeZone}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "reports",
+          filter: `zone_id=eq.${activeZone}`
+        },
+        () => {
+          fetchData();
+        }
+      )
       .subscribe();
-    return () => supabase.removeChannel(channel);
-  }, [fetchData]);
 
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData, activeZone, user?.id]);
+
+  // ✅ UPDATE STATUS + KIRIM WA
   const handleUpdateStatus = async (reportId, newStatus) => {
     setUpdating(reportId);
     try {
-      const { error } = await supabase
-        .from("reports")
-        .update({ status: newStatus })
-        .eq("id", reportId);
-      if (error) throw error;
-
-      const report = reports.find((r) => r.id === reportId);
-      if (report?.user_id) {
-        await sendNotificationToUser({
-          userId: report.user_id,
-          reportId,
-          plateNumber: report.plate_number,
-          status: newStatus,
-        });
-      }
+      await updateReportStatusWithNotification(reportId, newStatus);
       fetchData();
     } catch (err) {
       console.error("handleUpdateStatus error:", err);
+      alert("Gagal update status: " + err.message);
     } finally {
       setUpdating(null);
     }
   };
 
-  // Open evidence modal for "Tandai Selesai"
+  // ✅ OPEN MODAL EVIDENCE
   const openEvidenceModal = (report) => {
     setEvidenceModal(report);
     setEvidencePhoto(null);
-    setEvidenceNote('');
+    setEvidenceNote("");
   };
 
+  // ✅ SUBMIT EVIDENCE
   const handleEvidenceSubmit = async () => {
     if (!evidenceModal) return;
     setEvidenceUploading(true);
+
     try {
       let photoUrl = null;
 
-      // Upload photo if selected
       if (evidencePhoto) {
-        const ext = evidencePhoto.name.split('.').pop();
+        const ext = evidencePhoto.name.split(".").pop();
         const fileName = `evidence/${evidenceModal.id}_${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase
-          .storage
-          .from('reports')
+        const { error: uploadError } = await supabase.storage
+          .from("reports")
           .upload(fileName, evidencePhoto);
+
         if (uploadError) throw uploadError;
-        
-        const { data: urlData } = supabase
-          .storage
-          .from('reports')
+
+        const { data: urlData } = supabase.storage
+          .from("reports")
           .getPublicUrl(fileName);
         photoUrl = urlData.publicUrl;
       }
 
-      // Update report status
-      const updateData = { status: 'resolved' };
-      if (evidenceNote) updateData.resolution_note = evidenceNote;
-      if (photoUrl) updateData.evidence_photo_url = photoUrl;
+      const updateData = {
+        status: "resolved",
+        ...(evidenceNote && { resolution_note: evidenceNote }),
+        ...(photoUrl && { evidence_photo_url: photoUrl }),
+      };
 
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from("reports")
         .update(updateData)
         .eq("id", evidenceModal.id);
-      if (error) throw error;
 
-      // Send notification
-      if (evidenceModal.user_id) {
-        await sendNotificationToUser({
-          userId: evidenceModal.user_id,
-          reportId: evidenceModal.id,
-          plateNumber: evidenceModal.plate_number,
-          status: 'resolved',
-        });
+      if (updateError) throw updateError;
+
+      if (evidenceModal.users?.phone) {
+        supabase.functions
+          .invoke("send-wa-fonnte", {
+            body: {
+              phone: evidenceModal.users.phone,
+              message: `✅ *Laporan Selesai*\n\nHalo ${evidenceModal.users?.full_name || "User"}!\nLaporan Anda telah **selesai ditangani**.\n\nTerima kasih!`,
+            },
+          })
+          .catch((err) => console.error("WA Error:", err));
       }
 
       setEvidenceModal(null);
       fetchData();
     } catch (err) {
       console.error("Evidence submit error:", err);
-      alert('Gagal mengirim bukti: ' + err.message);
+      alert("Gagal mengirim bukti: " + err.message);
     } finally {
       setEvidenceUploading(false);
     }
   };
 
   return (
-    <SatpamLayout>
+    <SatpamLayout title="Dashboard Satpam">
       <div className="space-y-4">
-        {/* Info Zona Aktif */}
-        {todayRoster ? (
-          <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+        {/* 🟢 Info Zona Aktif */}
+        {activeZone ? (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-1">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-sm font-semibold text-green-800">
+              <span className="text-sm font-semibold text-green-800 dark:text-green-300">
                 Sedang Bertugas
               </span>
             </div>
-            <p className="text-lg font-bold text-green-900">
-              {todayRoster.zones?.name}
+            <p className="text-lg font-bold text-green-900 dark:text-green-100">
+              {zoneName || "Zona Aktif"}
             </p>
-            {todayRoster.start_date && (
-              <p className="text-xs text-green-600 mt-1">
-                Sejak {new Date(todayRoster.start_date).toLocaleDateString('id-ID')}
-                {todayRoster.end_date 
-                  ? ` s/d ${new Date(todayRoster.end_date).toLocaleDateString('id-ID')}` 
-                  : ' (belum ditentukan)'}
-              </p>
-            )}
           </div>
         ) : (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 text-amber-800 dark:text-amber-200">
             <div className="flex items-start gap-2">
               <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -208,76 +236,61 @@ export default function SatpamDashboard() {
           </div>
         )}
 
-        {/* Laporan */}
+        {/* 📋 Daftar Laporan */}
         <div>
-          <h2 className="font-semibold text-slate-700 text-sm mb-3">
-            Laporan di Zona Kamu {reports.length > 0 && <span className="text-blue-600">({reports.length})</span>}
+          <h2 className="font-semibold text-slate-700 dark:text-slate-200 text-sm mb-3">
+            Laporan di Zona Kamu {reports.length > 0 && <span className="text-blue-600 dark:text-blue-400">({reports.length})</span>}
           </h2>
 
           {loading ? (
             <div className="flex flex-col gap-3">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-36 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+                <div key={i} className="h-36 bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54] animate-pulse" />
               ))}
             </div>
-          ) : !todayRoster ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
-              <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <p className="text-slate-500 font-medium">Belum ada jadwal</p>
-              <p className="text-slate-400 text-sm mt-1">Hubungi admin untuk penjadwalan</p>
+          ) : !activeZone ? (
+            <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54]">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Menunggu penugasan zona...</p>
             </div>
           ) : reports.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-200">
-              <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <p className="text-slate-500 font-medium">Zona aman</p>
-              <p className="text-slate-400 text-sm mt-1">Tidak ada laporan aktif di zona kamu</p>
+            <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54]">
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Zona aman</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {reports.map((report) => {
                 const status = statusConfig[report.status] ?? statusConfig.pending;
                 return (
-                  <div key={report.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                  <div key={report.id} className="bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden">
                     {report.photo_url && (
                       <img
                         src={report.photo_url}
                         alt="laporan"
-                        className="w-full aspect-video object-cover cursor-pointer"
+                        className="w-full aspect-video object-cover cursor-pointer hover:opacity-90 transition"
                         onClick={() => setSelectedReport(report)}
                       />
                     )}
+
                     <div className="p-4">
-                      {/* Plat + Status */}
                       <div className="flex items-center justify-between mb-3">
-                        <div className="bg-slate-900 text-white px-3 py-1.5 rounded-lg cursor-pointer" onClick={() => setSelectedReport(report)}>
+                        <div className="bg-slate-900 dark:bg-slate-700 text-white px-3 py-1.5 rounded-lg cursor-pointer" onClick={() => setSelectedReport(report)}>
                           <span className="font-mono font-bold tracking-widest text-sm">{report.plate_number ?? "?????"}</span>
                         </div>
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${status.color}`}>{status.label}</span>
                       </div>
 
-                      {/* Zona & Waktu */}
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-1">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          </svg>
-                          <span className="text-xs text-slate-500">{report.zones?.name}</span>
-                        </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {report.zones?.name || zoneName || "Zona"}
+                        </span>
                         <span className="text-xs text-slate-400">{timeAgo(report.created_at)}</span>
                       </div>
 
-                      {report.description && <p className="text-xs text-slate-500 mb-3 line-clamp-2">{report.description}</p>}
+                      {report.description && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">{report.description}</p>
+                      )}
 
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 pt-2 border-t border-slate-100">
+                      <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-[#353F54]">
                         {report.status === "pending" && (
                           <button
                             onClick={() => handleUpdateStatus(report.id, "in_progress")}
@@ -291,18 +304,14 @@ export default function SatpamDashboard() {
                           <button
                             onClick={() => openEvidenceModal(report)}
                             disabled={updating === report.id}
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2.5 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-1.5"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold py-2.5 rounded-xl transition disabled:opacity-50"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
                             Selesaikan + Bukti
                           </button>
                         )}
                         <button
                           onClick={() => setSelectedReport(report)}
-                          className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition"
+                          className="px-3 py-2.5 bg-slate-100 dark:bg-[#353F54] hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-xl transition"
                         >
                           Detail
                         </button>
@@ -316,90 +325,114 @@ export default function SatpamDashboard() {
         </div>
       </div>
 
-      {/* Report Detail Modal */}
+      {/* 🔍 Report Detail Modal */}
       {selectedReport && (
-        <ReportDetailModal
-          report={selectedReport}
-          onClose={() => setSelectedReport(null)}
-        />
+        <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
       )}
 
-      {/* Evidence Upload Modal */}
+      {/* 📸 Evidence Upload Modal - IMPROVED MOBILE */}
       {evidenceModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50" onClick={() => setEvidenceModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="font-bold text-slate-800 text-lg mb-1">Selesaikan Laporan</h3>
-            <p className="text-xs text-slate-500 mb-4">
-              Plat <span className="font-mono font-bold text-slate-700">{evidenceModal.plate_number}</span> — Upload foto bukti penanganan
-            </p>
+        <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setEvidenceModal(null)}>
+          <div 
+            className="bg-white dark:bg-[#242C3B] w-full md:max-w-md md:rounded-2xl rounded-t-2xl shadow-2xl border-t md:border border-slate-200 dark:border-[#353F54] max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-[#242C3B] border-b border-slate-200 dark:border-[#353F54] p-4 flex items-center justify-between rounded-t-2xl">
+              <h3 className="font-bold text-slate-800 dark:text-white text-lg">Selesaikan Laporan</h3>
+              <button onClick={() => setEvidenceModal(null)} className="w-8 h-8 rounded-full bg-slate-100 dark:bg-[#353F54] hover:bg-slate-200 dark:hover:bg-[#44506B] flex items-center justify-center text-slate-500 dark:text-slate-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
 
-            {/* Photo upload */}
-            <div className="mb-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={e => setEvidencePhoto(e.target.files?.[0] ?? null)}
-              />
-              {evidencePhoto ? (
-                <div className="relative">
-                  <img
-                    src={URL.createObjectURL(evidencePhoto)}
-                    alt="Bukti"
-                    className="w-full h-40 object-cover rounded-xl"
-                  />
-                  <button
-                    onClick={() => { setEvidencePhoto(null); if(fileInputRef.current) fileInputRef.current.value = '' }}
-                    className="absolute top-2 right-2 w-7 h-7 bg-black/50 rounded-full flex items-center justify-center text-white"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <div className="p-4 space-y-4">
+              <div className="bg-slate-50 dark:bg-[#1e2532] rounded-xl p-3">
+                <p className="text-xs text-slate-500 dark:text-slate-400">Plat Nomor</p>
+                <p className="font-mono font-bold text-slate-800 dark:text-slate-200">{evidenceModal.plate_number}</p>
+              </div>
+
+              {/* Photo Upload */}
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                  Foto Bukti Penanganan <span className="text-slate-400">(Opsional)</span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  id="evidence-photo"
+                  onChange={(e) => setEvidencePhoto(e.target.files?.[0] ?? null)}
+                />
+                {evidencePhoto ? (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-[#353F54]">
+                    <img src={URL.createObjectURL(evidencePhoto)} alt="Bukti" className="w-full h-48 object-cover" />
+                    <button
+                      onClick={() => setEvidencePhoto(null)}
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <label htmlFor="evidence-photo" className="block w-full h-32 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition cursor-pointer">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                  </button>
-                </div>
-              ) : (
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Ambil foto bukti</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Catatan */}
+              <div>
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">
+                  Catatan Penanganan
+                </label>
+                <textarea
+                  value={evidenceNote}
+                  onChange={(e) => setEvidenceNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-[#353F54] bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition resize-none text-sm"
+                  placeholder="Contoh: Kendaraan sudah dipindahkan ke area parkir resmi..."
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-2">
                 <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-32 border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50/50 transition"
+                  onClick={handleEvidenceSubmit}
+                  disabled={evidenceUploading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span className="text-xs text-slate-500">Ambil foto bukti (opsional)</span>
+                  {evidenceUploading ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Selesaikan
+                    </>
+                  )}
                 </button>
-              )}
-            </div>
-
-            {/* Note */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-slate-600 mb-1">Catatan Penanganan</label>
-              <textarea
-                value={evidenceNote}
-                onChange={e => setEvidenceNote(e.target.value)}
-                rows={2}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-green-500 transition resize-none text-sm"
-                placeholder="Contoh: Kendaraan sudah dipindahkan"
-              />
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleEvidenceSubmit}
-                disabled={evidenceUploading}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50"
-              >
-                {evidenceUploading ? 'Mengirim...' : 'Selesaikan'}
-              </button>
-              <button
-                onClick={() => setEvidenceModal(null)}
-                className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl transition text-sm"
-              >
-                Batal
-              </button>
+                <button
+                  onClick={() => setEvidenceModal(null)}
+                  className="flex-1 bg-slate-100 dark:bg-[#353F54] hover:bg-slate-200 dark:hover:bg-[#44506B] text-slate-700 dark:text-slate-200 font-semibold py-3 rounded-xl transition"
+                >
+                  Batal
+                </button>
+              </div>
             </div>
           </div>
         </div>
