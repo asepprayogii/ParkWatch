@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../../services/auth";
 import { useAuth } from "../../store/AuthContext";
+import { useTheme } from "../../store/ThemeContext"; // ✅ Import useTheme
 import { getUnreadCount } from "../../services/notifications";
 import { supabase } from "../../lib/supabase";
 
@@ -52,67 +53,72 @@ const navItems = [
       </svg>
     ),
   },
-]
+];
 
 export default function SatpamSidebar({ onCollapse }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const [unread, setUnread] = useState(0)
+  const [collapsed, setCollapsed] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme(); // ✅ Ambil theme & toggle
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    if (!user) return
-    getUnreadCount(user.id).then(setUnread)
+    if (!user) return;
+    getUnreadCount(user.id).then(setUnread);
     const channel = supabase
       .channel('satpam-sidebar-notif')
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'notifications',
         filter: `user_id=eq.${user.id}`
       }, () => getUnreadCount(user.id).then(setUnread))
-      .subscribe()
-    return () => supabase.removeChannel(channel)
-  }, [user])
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [user]);
 
   const handleToggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    onCollapse?.(next)
-  }
+    const next = !collapsed;
+    setCollapsed(next);
+    onCollapse?.(next);
+  };
 
   const handleLogout = async () => {
-    await logout()
-    navigate("/login")
-  }
+    try {
+      await logout();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      console.error("Logout error:", error);
+      navigate("/login", { replace: true });
+    }
+  };
 
   return (
-    <aside className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white dark:bg-[#242C3B] border-r border-slate-200 dark:border-[#353F54] z-50 transition-all duration-300 ${collapsed ? "w-16" : "w-56"}`}>
-      <div className={`flex items-center h-14 border-b border-slate-200 dark:border-[#353F54] px-3 ${collapsed ? "justify-center" : "justify-between"}`}>
+    <aside className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white dark:bg-[#242C3B] border-r border-slate-200 dark:border-[#353F54] z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'}`}>
+      {/* Header */}
+      <div className={`flex items-center h-14 border-b border-slate-200 dark:border-[#353F54] px-3 ${collapsed ? 'justify-center' : 'justify-between'}`}>
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-green-600 dark:bg-green-500 rounded-lg flex items-center justify-center shrink-0 shadow-lg shadow-green-500/20">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
+            <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
             <div>
               <p className="font-bold text-slate-800 dark:text-white text-sm leading-none">ParkWatch</p>
               <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mt-0.5">Satpam</p>
             </div>
           </div>
         )}
-        <button onClick={handleToggle} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-[#353F54] text-slate-500 dark:text-slate-400 transition">
+        <button
+          onClick={handleToggle}
+          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-[#353F54] text-slate-500 dark:text-slate-400 transition"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
           {collapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           )}
         </button>
       </div>
 
+      {/* User Info */}
       {!collapsed && (
         <div className="px-3 py-3 border-b border-slate-100 dark:border-[#353F54]">
           <div className="flex items-center gap-2">
@@ -127,52 +133,73 @@ export default function SatpamSidebar({ onCollapse }) {
         </div>
       )}
 
-      <nav className="flex-1 px-2 py-3 flex flex-col gap-1">
+      {/* Navigation */}
+      <nav className="flex-1 px-2 py-3 flex flex-col gap-1 overflow-y-auto">
         {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            title={collapsed ? item.label : ""}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-2 py-2.5 rounded-xl transition text-sm font-bold relative
-              ${collapsed ? "justify-center" : ""}
-              ${isActive 
-                ? "bg-green-600 text-white shadow-lg shadow-green-500/20" 
-                : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353F54] hover:text-slate-900 dark:hover:text-white"}`
-            }
-          >
-            {/* Icon + badge */}
-            <div className="relative shrink-0">
-              {item.icon}
-              {item.hasNotifBadge && unread > 0 && (
-                <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#242C3B]">
-                  <span className="text-white font-bold" style={{ fontSize: '7px' }}>
-                    {unread > 9 ? '9+' : unread}
-                  </span>
-                </div>
+          <div key={item.to} className="relative" onMouseEnter={() => setHoveredItem(item.to)} onMouseLeave={() => setHoveredItem(null)}>
+            <NavLink
+              to={item.to}
+              title={collapsed ? item.label : ""}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-2 py-2.5 rounded-xl transition text-sm font-bold relative
+                ${collapsed ? 'justify-center' : ''}
+                ${isActive
+                  ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'
+                  : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353F54] hover:text-slate-900 dark:hover:text-white'}`
+              }
+            >
+              <div className="relative shrink-0">
+                {item.icon}
+                {item.hasNotifBadge && unread > 0 && (
+                  <div className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#242C3B]">
+                    <span className="text-white font-bold" style={{ fontSize: '7px' }}>{unread > 9 ? '9+' : unread}</span>
+                  </div>
+                )}
+              </div>
+              {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
+              {!collapsed && item.hasNotifBadge && unread > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-sm">{unread > 9 ? '9+' : unread}</span>
               )}
-            </div>
-            {!collapsed && (
-              <span className="flex-1 truncate">{item.label}</span>
+            </NavLink>
+            {collapsed && hoveredItem === item.to && (
+              <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-slate-900 dark:bg-[#1e293b] text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap z-50 pointer-events-none shadow-lg">{item.label}</div>
             )}
-            {!collapsed && item.hasNotifBadge && unread > 0 && (
-              <span className="ml-auto bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center shadow-sm">
-                {unread > 9 ? '9+' : unread}
-              </span>
-            )}
-          </NavLink>
+          </div>
         ))}
       </nav>
 
-      <div className="px-2 py-3 border-t border-slate-100 dark:border-[#353F54]">
-        <button onClick={handleLogout} title={collapsed ? "Keluar" : ""}
-          className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition ${collapsed ? "justify-center" : ""}`}>
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
+      {/* ✅ Footer: Theme Toggle + Logout */}
+      <div className="px-2 py-3 border-t border-slate-100 dark:border-[#353F54] flex flex-col gap-1">
+        {/* Theme Toggle */}
+        <div className="relative" onMouseEnter={() => setHoveredItem('theme')} onMouseLeave={() => setHoveredItem(null)}>
+          <button
+            onClick={toggleTheme}
+            title={collapsed ? (theme === 'dark' ? 'Mode Terang' : 'Mode Gelap') : ''}
+            className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold transition ${collapsed ? 'justify-center' : 'justify-start'} text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353F54] hover:text-slate-900 dark:hover:text-white`}
+          >
+            {theme === 'dark' ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+            )}
+            {!collapsed && <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>}
+          </button>
+          {collapsed && hoveredItem === 'theme' && (
+            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-slate-900 dark:bg-[#1e293b] text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap z-50 pointer-events-none shadow-lg">{theme === 'dark' ? 'Terang' : 'Gelap'}</div>
+          )}
+        </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          title={collapsed ? "Keluar" : ""}
+          className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition ${collapsed ? 'justify-center' : ''}`}
+          aria-label="Logout"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
           {!collapsed && <span>Keluar</span>}
         </button>
       </div>
     </aside>
-  )
+  );
 }

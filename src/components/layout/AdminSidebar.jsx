@@ -10,6 +10,7 @@ import { twMerge } from 'tailwind-merge'
 function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
+
 const navItems = [
   {
     to: "/admin/dashboard",
@@ -25,7 +26,7 @@ const navItems = [
     to: "/admin/laporan",
     label: "Semua Laporan",
     showBadge: true,
-    badgeType: "pending", // Tipe badge: 'pending' untuk laporan menunggu
+    badgeType: "pending",
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -63,20 +64,8 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    to: "/admin/pengaturan",
-    label: "Pengaturan",
-    showBadge: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
 ];
 
-// ─── Styles ─────────────────────────────────────────────────────────────
 const S = {
   sidebar: (collapsed, theme) => ({
     width: collapsed ? "64px" : "224px",
@@ -86,34 +75,15 @@ const S = {
     fontFamily: "'Plus Jakarta Sans', sans-serif",
   }),
   shineTop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "1px",
+    position: "absolute", top: 0, left: 0, right: 0, height: "1px",
     background: "linear-gradient(90deg, transparent, rgba(34,211,238,0.35), transparent)",
-  },
-  logoIcon: {
-    background: "linear-gradient(135deg, #185FA5, #06B6D4)",
-    boxShadow: "0 0 16px rgba(6,182,212,0.3)",
-    borderRadius: "9px",
-    width: "32px",
-    height: "32px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
   },
   avatarRing: {
     background: "linear-gradient(135deg, #185FA5, #22D3EE)",
     boxShadow: "0 0 10px rgba(34,211,238,0.2)",
   },
   activeBar: {
-    position: "absolute",
-    left: 0,
-    top: "20%",
-    bottom: "20%",
-    width: "3px",
+    position: "absolute", left: 0, top: "20%", bottom: "20%", width: "3px",
     background: "linear-gradient(180deg, #22D3EE, #185FA5)",
     borderRadius: "0 3px 3px 0",
   },
@@ -123,22 +93,12 @@ const S = {
     animation: "pw-badge-pulse 2s ease-in-out infinite",
   },
   tooltip: {
-    position: "absolute",
-    left: "56px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    background: "rgba(2,18,42,0.95)",
-    border: "1px solid rgba(55,138,221,0.2)",
-    backdropFilter: "blur(10px)",
-    color: "#f0f6ff",
-    fontSize: "12px",
-    fontWeight: 500,
-    padding: "5px 10px",
-    borderRadius: "8px",
-    whiteSpace: "nowrap",
-    zIndex: 100,
-    pointerEvents: "none",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+    position: "absolute", left: "56px", top: "50%", transform: "translateY(-50%)",
+    background: "rgba(2,18,42,0.95)", border: "1px solid rgba(55,138,221,0.2)",
+    backdropFilter: "blur(10px)", color: "#f0f6ff",
+    fontSize: "12px", fontWeight: 500, padding: "5px 10px",
+    borderRadius: "8px", whiteSpace: "nowrap", zIndex: 100,
+    pointerEvents: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
   },
 };
 
@@ -150,39 +110,24 @@ export default function AdminSidebar({ onCollapse }) {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  // ✅ Fetch badge counts dari berbagai tabel
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        // Hitung laporan pending
         const { count: pendingCount } = await supabase
           .from("reports")
           .select("id", { count: "exact", head: true })
           .eq("status", "pending");
-
-        setBadgeCounts({
-          pending: pendingCount ?? 0,
-        });
+        setBadgeCounts({ pending: pendingCount ?? 0 });
       } catch (err) {
         console.error("Error fetching badge counts:", err);
       }
     };
-
     fetchCounts();
-
-    // ✅ Realtime subscription untuk update badge otomatis
     const channel = supabase
       .channel("admin-sidebar-badges")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "reports" },
-        fetchCounts
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "reports" }, fetchCounts)
       .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => supabase.removeChannel(channel);
   }, []);
 
   const handleToggle = () => {
@@ -197,17 +142,14 @@ export default function AdminSidebar({ onCollapse }) {
   };
 
   const initials = (user?.full_name?.charAt(0) || "A").toUpperCase();
-
-  // Helper: Format badge number
   const formatBadge = (num) => (num > 99 ? "99+" : num > 0 ? num : null);
 
   return (
     <>
-      {/* Keyframes */}
       <style>{`
         @keyframes pw-badge-pulse {
           0%,100% { box-shadow: 0 0 8px rgba(239,68,68,0.4); }
-          50%      { box-shadow: 0 0 14px rgba(239,68,68,0.75); }
+          50% { box-shadow: 0 0 14px rgba(239,68,68,0.75); }
         }
         .pw-nav-item { transition: all 0.2s cubic-bezier(.4,0,.2,1); }
         .pw-nav-item:hover { transform: translateX(2px); }
@@ -216,25 +158,20 @@ export default function AdminSidebar({ onCollapse }) {
       `}</style>
 
       <aside className="hidden md:flex flex-col fixed left-0 top-0 h-full z-50 overflow-hidden" style={S.sidebar(collapsed, theme)}>
-        {/* Shiny top edge */}
         <div style={S.shineTop} />
 
-        {/* ── Logo + Toggle ── */}
+        {/* Logo + Toggle */}
         <div className="flex items-center h-14 px-3" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, justifyContent: collapsed ? "center" : "space-between" }}>
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
-              <div style={S.logoIcon}>
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
+              {/* ✅ LOGO DARI PUBLIC /logo.png */}
+              <img src="/logo.png" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className={cn("font-bold text-sm leading-none tracking-tight", theme === 'dark' ? "text-white" : "text-slate-900")}>ParkWatch</p>
                 <p className="text-xs leading-none mt-0.5" style={{ color: theme === 'dark' ? "rgba(176,210,255,0.5)" : "rgba(100,116,139,0.7)", letterSpacing: "0.4px", textTransform: "uppercase", fontSize: "9px" }}>Admin Panel</p>
               </div>
             </div>
           )}
-
           <button onClick={handleToggle} className="pw-toggle w-7 h-7 flex items-center justify-center rounded-lg shrink-0 transition-all duration-200" style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.18)", color: "rgba(176,210,255,0.5)", cursor: "pointer" }}>
             <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               {collapsed ? <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /> : <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />}
@@ -242,7 +179,7 @@ export default function AdminSidebar({ onCollapse }) {
           </button>
         </div>
 
-        {/* ── User Info ── */}
+        {/* User Info */}
         <div className="px-3 py-3 flex items-center overflow-hidden" style={{ borderBottom: `1px solid ${theme === 'dark' ? 'rgba(55,138,221,0.15)' : '#E2E8F0'}`, gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start" }}>
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={S.avatarRing}>
             <span className="text-sm font-bold text-white">{initials}</span>
@@ -255,12 +192,11 @@ export default function AdminSidebar({ onCollapse }) {
           )}
         </div>
 
-        {/* ── Nav Items ── */}
+        {/* Nav Items */}
         <nav className="flex-1 px-2 py-3 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
           {navItems.map((item) => {
             const badgeValue = item.showBadge && item.badgeType ? badgeCounts[item.badgeType] : 0;
             const displayBadge = formatBadge(badgeValue);
-
             return (
               <div key={item.to} className="relative" style={{ position: "relative" }}>
                 <NavLink
@@ -280,46 +216,27 @@ export default function AdminSidebar({ onCollapse }) {
                 >
                   {({ isActive }) => (
                     <>
-                      {/* Active left bar */}
                       {isActive && <span style={S.activeBar} />}
-
-                      {/* Icon */}
                       <div className="relative shrink-0">
                         {item.icon}
-                        {/* Badge dot untuk collapsed mode */}
-                        {collapsed && displayBadge && (
-                          <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900" />
-                        )}
+                        {collapsed && displayBadge && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-slate-900" />}
                       </div>
-
-                      {/* Label + Badge angka untuk expanded mode */}
                       {!collapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
-                          {displayBadge && (
-                            <span className="text-white rounded-full flex items-center justify-center font-bold shrink-0" style={{ ...S.badge, fontSize: "9px", minWidth: "18px", height: "18px", padding: "0 5px" }}>
-                              {displayBadge}
-                            </span>
-                          )}
+                          {displayBadge && <span className="text-white rounded-full flex items-center justify-center font-bold shrink-0" style={{ ...S.badge, fontSize: "9px", minWidth: "18px", height: "18px", padding: "0 5px" }}>{displayBadge}</span>}
                         </>
                       )}
                     </>
                   )}
                 </NavLink>
-
-                {/* Tooltip saat collapsed */}
-                {collapsed && hoveredItem === item.to && (
-                  <div style={S.tooltip}>
-                    {item.label}
-                    {displayBadge && ` (${displayBadge})`}
-                  </div>
-                )}
+                {collapsed && hoveredItem === item.to && <div style={S.tooltip}>{item.label}{displayBadge && ` (${displayBadge})`}</div>}
               </div>
             );
           })}
         </nav>
 
-        {/* ── Theme & Logout ── */}
+        {/* Theme & Logout */}
         <div className="px-2 py-3 flex flex-col gap-1" style={{ borderTop: "1px solid rgba(55,138,221,0.15)" }}>
           <div className="relative" onMouseEnter={() => setHoveredItem("theme")} onMouseLeave={() => setHoveredItem(null)}>
             <button onClick={toggleTheme} className="pw-nav-item w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200" style={{ padding: "9px 10px", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start", color: "rgba(176,210,255,0.65)", border: "1px solid transparent", background: "transparent", cursor: "pointer" }}>
@@ -336,7 +253,6 @@ export default function AdminSidebar({ onCollapse }) {
             </button>
             {collapsed && hoveredItem === "theme" && <div style={{ ...S.tooltip, color: "#f0f6ff" }}>{theme === 'dark' ? 'Terang' : 'Gelap'}</div>}
           </div>
-
           <div className="relative" onMouseEnter={() => setHoveredItem("logout")} onMouseLeave={() => setHoveredItem(null)}>
             <button onClick={handleLogout} className="pw-logout w-full flex items-center rounded-xl text-sm font-medium transition-all duration-200" style={{ padding: "9px 10px", gap: collapsed ? 0 : "10px", justifyContent: collapsed ? "center" : "flex-start", color: "rgba(252,99,99,0.65)", border: "1px solid transparent", background: "transparent", cursor: "pointer" }}>
               <svg xmlns="http://www.w3.org/2000/svg" className="w-[18px] h-[18px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

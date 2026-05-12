@@ -1,9 +1,15 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../store/AuthContext";
+import { useTheme } from "../../store/ThemeContext"; // ✅ Import useTheme
 import { getUnreadCount } from "../../services/notifications";
 import { supabase } from "../../lib/supabase";
-import { logout } from "../../services/auth";
+import clsx from 'clsx';
+import { twMerge } from 'tailwind-merge';
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
 
 const navItems = [
   {
@@ -17,7 +23,7 @@ const navItems = [
   },
   {
     to: "/satpam/notifikasi",
-    label: "Notifikasi",
+    label: "Notif",
     hasNotifBadge: true,
     icon: (active) => (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.5 : 2}>
@@ -52,43 +58,50 @@ const navItems = [
       </svg>
     ),
   },
-]
+];
 
 export default function SatpamBottomNav() {
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const [unread, setUnread] = useState(0)
+  const { user } = useAuth();
+  const { theme } = useTheme(); // ✅ Ambil theme
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    if (!user) return
-    getUnreadCount(user.id).then(setUnread)
-
+    if (!user) return;
+    getUnreadCount(user.id).then(setUnread);
     const channel = supabase
       .channel('satpam-bottom-notif')
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'notifications',
         filter: `user_id=eq.${user.id}`
       }, () => getUnreadCount(user.id).then(setUnread))
-      .subscribe()
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, [user]);
 
-    return () => supabase.removeChannel(channel)
-  }, [user])
-
-  const handleLogout = async () => {
-    await logout()
-    navigate("/login")
-  }
+  // ✅ Theme-aware styles
+  const themeStyles = {
+    bg: theme === "dark" ? "bg-[#242C3B]" : "bg-white",
+    border: theme === "dark" ? "border-[#353F54]" : "border-slate-200",
+    textInactive: theme === "dark" ? "text-slate-400" : "text-slate-500",
+    textActive: theme === "dark" ? "text-green-400" : "text-green-600",
+    hoverText: theme === "dark" ? "hover:text-slate-300" : "hover:text-slate-600",
+    badgeBorder: theme === "dark" ? "border-[#242C3B]" : "border-white",
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-[#242C3B] border-t border-slate-200 dark:border-[#353F54] px-2 md:hidden transition-colors duration-300">
-      <div className="flex items-center justify-around h-16">
+    <div className={`fixed bottom-0 left-0 right-0 z-50 border-t md:hidden transition-colors duration-300 ${themeStyles.bg} ${themeStyles.border}`}>
+      <div className="flex items-center justify-around h-16 px-1">
         {navItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition relative
-              ${isActive ? "text-green-600 dark:text-green-400" : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"}`
+              cn(
+                "flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition relative flex-1 min-w-0",
+                isActive 
+                  ? cn(themeStyles.textActive, "bg-green-500/10") 
+                  : cn(themeStyles.textInactive, themeStyles.hoverText)
+              )
             }
           >
             {({ isActive }) => (
@@ -96,25 +109,23 @@ export default function SatpamBottomNav() {
                 <div className="relative">
                   {item.icon(isActive)}
                   {item.hasNotifBadge && unread > 0 && (
-                    <div className="absolute -top-1 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#242C3B]">
+                    <div className={`absolute -top-1 -right-1.5 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center border-2 ${themeStyles.badgeBorder}`}>
                       <span className="text-white font-bold" style={{ fontSize: '8px' }}>
                         {unread > 9 ? '9+' : unread}
                       </span>
                     </div>
                   )}
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-tight">{item.label}</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight text-center truncate w-full">{item.label}</span>
+                {/* Active indicator dot */}
+                {isActive && (
+                  <span className={`absolute bottom-1 w-1 h-1 rounded-full ${theme === 'dark' ? 'bg-green-400' : 'bg-green-600'}`} />
+                )}
               </>
             )}
           </NavLink>
         ))}
-        <button onClick={handleLogout} className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-red-500 dark:text-red-400 opacity-80 hover:opacity-100 transition">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-          </svg>
-          <span className="text-[10px] font-bold uppercase tracking-tight">Keluar</span>
-        </button>
       </div>
     </div>
-  )
+  );
 }
