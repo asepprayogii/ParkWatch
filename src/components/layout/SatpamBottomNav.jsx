@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useAuth } from "../../store/AuthContext";
+import { useAuth } from "../../store/authContext";
 import { useTheme } from "../../store/ThemeContext"; // ✅ Import useTheme
 import { getUnreadCount } from "../../services/notifications";
 import { supabase } from "../../lib/supabase";

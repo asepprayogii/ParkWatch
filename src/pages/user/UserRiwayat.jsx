@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../store/AuthContext'
+import { useAuth } from '../../store/authContext'
 import { supabase } from '../../lib/supabase'
 import { useNavigate } from 'react-router-dom'
 import UserLayout from '../../components/layout/UserLayout'

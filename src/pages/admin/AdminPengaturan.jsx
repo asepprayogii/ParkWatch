@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useAuth } from '../../store/AuthContext'
+import { useAuth } from '../../store/authContext'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
 import { useLocation } from 'react-router-dom'

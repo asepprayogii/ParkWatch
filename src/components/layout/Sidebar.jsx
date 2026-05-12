@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { logout } from '../../services/auth'
-import { useAuth } from '../../store/AuthContext'
+import { useAuth } from '../../store/authContext'
 import { useTheme } from '../../store/ThemeContext'
 import { getUnreadCount } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../store/AuthContext'
+import { useAuth } from '../../store/authContext'
 import { logout } from '../../services/auth'
 import { supabase } from '../../lib/supabase'
 import { getUserPoints, levels } from '../../services/points'

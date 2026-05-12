@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
-import { AuthProvider } from './store/AuthContext'
+import { AuthProvider } from './store/authContext'
 import { ToastProvider } from './store/ToastContext'
 import { ThemeProvider } from './store/ThemeContext'
 import ScrollToTop from './components/ui/ScrollToTop'

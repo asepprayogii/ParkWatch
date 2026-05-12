@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useAuth } from "../../store/AuthContext";
+import { useAuth } from "../../store/authContext";
 import { supabase } from "../../lib/supabase";
 import SatpamLayout from "../../components/layout/SatpamLayout";
 import { updateReportStatusWithNotification } from "../../services/reports";
