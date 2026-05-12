@@ -1,4 +1,4 @@
-import { useAuth } from '../../store/authContext'
+import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
 import { logout } from '../../services/auth'
 import { useNavigate } from 'react-router-dom'

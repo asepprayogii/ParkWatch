@@ -1,7 +1,7 @@
 // src/pages/user/UserFeed.jsx
 import { useLayoutEffect, useEffect, useState, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useAuth } from "../../store/authContext";
+import { useAuth } from "../../store/AuthContext";
 import { getReports } from "../../services/reports";
 import { supabase } from "../../lib/supabase";
 import { getUserPoints } from "../../services/points";

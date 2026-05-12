@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../store/authContext'
+import { useAuth } from '../../store/AuthContext'
 import { supabase } from '../../lib/supabase'
 import SatpamLayout from '../../components/layout/SatpamLayout'
 

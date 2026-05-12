@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router-dom";
-import { useAuth } from "../../store/authContext";
+import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { useTheme } from "../../store/ThemeContext";
 import clsx from 'clsx';

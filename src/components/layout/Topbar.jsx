@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../../store/authContext'
+import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
 import { getUnreadCount } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'

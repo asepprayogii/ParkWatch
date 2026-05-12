@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom' // <--- PENTING
-import { useAuth } from '../../store/authContext'
+import { useAuth } from '../../store/AuthContext'
 import { getNotifications, markAsRead, markAllAsRead } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'
 import UserLayout from '../../components/layout/UserLayout'
