@@ -11,7 +11,7 @@ export default function UserLayout({ title, children }) {
 
   return (
     <div
-      className="min-h-screen transition-colors duration-300"
+      className="min-h-screen overflow-x-hidden transition-colors duration-300"
       style={{
         background: theme === 'dark' ? '#222834' : '#f8fafc',
         color: theme === 'dark' ? '#e2e8f0' : '#0f172a',
@@ -27,18 +27,27 @@ export default function UserLayout({ title, children }) {
       </div>
 
       {/* Main Content */}
-      <main
-        className="transition-all duration-300 ease-in-out pt-14 pb-24 px-4 md:pt-8 md:pb-8 md:px-6"
-        style={{ marginLeft: 0 }}
+      <div
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          marginLeft: 0,
+          paddingTop: 0,
+        }}
       >
         <style>{`
           @media (min-width: 768px) {
-            .user-main { margin-left: ${collapsed ? '64px' : '224px'}; }
+            .user-main-wrap {
+              margin-left: ${collapsed ? '64px' : '224px'};
+            }
           }
-          .user-main { transition: margin-left 0.3s cubic-bezier(.4,0,.2,1); }
+          .user-main-wrap {
+            transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
+            min-width: 0;
+            width: auto;
+          }
         `}</style>
 
-        <div className="user-main max-w-5xl mx-auto">
+        <main className="user-main-wrap pt-14 pb-24 px-4 md:pt-8 md:pb-8 md:px-6 min-w-0">
           {/* Desktop page title */}
           <div className="hidden md:flex items-start justify-between mb-6">
             <div>
@@ -58,11 +67,13 @@ export default function UserLayout({ title, children }) {
             </div>
           </div>
 
-          <PageTransition>
-            {children}
-          </PageTransition>
-        </div>
-      </main>
+          <div className="min-w-0 w-full">
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </div>
+        </main>
+      </div>
 
       {/* Bottom Nav — mobile only */}
       <BottomNav />
