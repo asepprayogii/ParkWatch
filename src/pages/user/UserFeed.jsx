@@ -1,5 +1,5 @@
 // src/pages/user/UserFeed.jsx
-import { useLayoutEffect, useState, useCallback, useMemo } from 'react'
+import { useLayoutEffect, useEffect, useState, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from '../../store/AuthContext'
 import { getReports } from '../../services/reports'
@@ -16,7 +16,6 @@ import {
 import clsx from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
-// ── UTILS ──
 function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
@@ -36,7 +35,6 @@ function formatDate(dateStr) {
   })
 }
 
-// ── GLASS CARD ──
 function GlassCard({ children, className, hover = true, onClick }) {
   return (
     <motion.div
@@ -56,7 +54,6 @@ function GlassCard({ children, className, hover = true, onClick }) {
   )
 }
 
-// ── STATUS CONFIG ──
 const statusConfig = {
   pending: { 
     label: 'Menunggu', 
@@ -84,171 +81,141 @@ const statusConfig = {
   },
 }
 
-// ── 🎯 INLINE MODAL: ReportDetailModal (FIXED: Scroll Unlock Bug) ──
+// ── MODAL — tanpa scroll lock di sini, diurus parent ──
 function ReportDetailModal({ report, onClose }) {
   if (!report) return null
 
   const status = statusConfig[report.status] ?? statusConfig.pending
   const StatusIcon = status.icon
 
-  // ✅ BULLETPROOF SCROLL LOCK / UNLOCK
-  useLayoutEffect(() => {
-    // Simpan state awal
-    const prevBody = document.body.style.overflow;
-    const prevHtml = document.documentElement.style.overflow;
-    const prevPosition = document.body.style.position;
-    const prevWidth = document.body.style.width;
-    
-    // Lock scroll
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.position = '';
-    document.body.style.width = '';
-    
-    // Cleanup: Kembalikan SEMUA style scroll ke state semula
-    return () => {
-      document.body.style.overflow = prevBody || '';
-      document.documentElement.style.overflow = prevHtml || '';
-      document.body.style.position = prevPosition || '';
-      document.body.style.width = prevWidth || '';
-      
-      // Force browser recalculate layout (mencegah scroll stuck)
-      void document.body.offsetHeight;
-    };
-  }, []);
-
-  const ModalContent = () => (
-    <AnimatePresence>
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex items-start justify-center pt-8 pb-8 px-4 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain"
+      onClick={onClose}
+    >
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] flex items-start justify-center pt-8 pb-8 px-4 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain"
-        onClick={onClose}
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+        className="w-full max-w-2xl my-auto"
+        onClick={e => e.stopPropagation()}
       >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="w-full max-w-2xl my-auto"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="bg-white dark:bg-[#242C3B] rounded-[28px] shadow-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden flex flex-col max-h-[85vh]">
-            
-            {/* Header (Fixed) */}
-            <div className={cn("relative p-6 pb-4 bg-gradient-to-r flex-shrink-0", status.gradient)}>
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1f2e]/90 backdrop-blur-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition shadow-lg z-10"
-              >
-                <X size={18} strokeWidth={2.5} />
-              </button>
+        <div className="bg-white dark:bg-[#242C3B] rounded-[28px] shadow-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden flex flex-col max-h-[85vh]">
+          
+          {/* Header */}
+          <div className={cn("relative p-6 pb-4 bg-gradient-to-r flex-shrink-0", status.gradient)}>
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1f2e]/90 backdrop-blur-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition shadow-lg z-10"
+            >
+              <X size={18} strokeWidth={2.5} />
+            </button>
 
-              <div className={cn("inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-lg", status.bg, status.text)}>
-                <StatusIcon size={14} strokeWidth={2.5} />
-                <span className={cn("w-2 h-2 rounded-full animate-pulse", status.dot)} />
-                {status.label}
-              </div>
-
-              <div className="mt-4">
-                <div className="inline-flex items-center bg-slate-900 dark:bg-[#1a1f2e] text-white px-4 py-2 rounded-xl shadow-lg">
-                  <span className="font-mono font-black tracking-widest text-lg">
-                    {report.plate_number ?? '?????'}
-                  </span>
-                </div>
-              </div>
+            <div className={cn("inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-lg", status.bg, status.text)}>
+              <StatusIcon size={14} strokeWidth={2.5} />
+              <span className={cn("w-2 h-2 rounded-full animate-pulse", status.dot)} />
+              {status.label}
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 overscroll-contain">
-              {report.photo_url && (
-                <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                  <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
-                  <div className="p-2 bg-[#37B6E9]/10 dark:bg-[#37B6E9]/20 rounded-xl">
-                    <MapPin className="w-5 h-5 text-[#37B6E9]" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zona</p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {report.zones?.name ?? 'Tidak diketahui'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
-                  <div className="p-2 bg-[#4B4CED]/10 dark:bg-[#4B4CED]/20 rounded-xl">
-                    <Calendar className="w-5 h-5 text-[#4B4CED]" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Waktu</p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {timeAgo(report.created_at)}
-                    </p>
-                  </div>
-                </div>
+            <div className="mt-4">
+              <div className="inline-flex items-center bg-slate-900 dark:bg-[#1a1f2e] text-white px-4 py-2 rounded-xl shadow-lg">
+                <span className="font-mono font-black tracking-widest text-lg">
+                  {report.plate_number ?? '?????'}
+                </span>
               </div>
-
-              {report.description && (
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
-                  <div className="flex items-center gap-2 mb-3">
-                    <MessageSquare className="w-4 h-4 text-[#37B6E9]" />
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deskripsi</p>
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-                    {report.description}
-                  </p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#4B4CED]/5 to-[#37B6E9]/5 dark:from-[#4B4CED]/10 dark:to-[#37B6E9]/10 border border-[#4B4CED]/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4B4CED] to-[#37B6E9] flex items-center justify-center shadow-lg shadow-[#4B4CED]/30">
-                    <span className="text-sm font-black text-white">
-                      {report.users?.full_name?.charAt(0).toUpperCase() ?? 'U'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelapor</p>
-                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                      {report.users?.full_name ?? 'Anonim'}
-                    </p>
-                  </div>
-                </div>
-                <ShieldCheck className="w-6 h-6 text-[#4B4CED]/60" />
-              </div>
-
-              <div className="text-center pt-2 border-t border-slate-100 dark:border-[#353F54]">
-                <p className="text-xs text-slate-400">
-                  Dilaporkan pada {formatDate(report.created_at)}
-                </p>
-              </div>
-            </div>
-
-            {/* Footer (Fixed) */}
-            <div className="px-6 py-4 bg-slate-50 dark:bg-[#222834] border-t border-slate-200 dark:border-[#353F54] flex-shrink-0">
-              <button
-                onClick={onClose}
-                className="w-full py-3 rounded-xl bg-slate-900 dark:bg-[#1a1f2e] text-white font-bold text-sm hover:bg-slate-800 dark:hover:bg-[#151a27] transition shadow-lg"
-              >
-                Tutup
-              </button>
             </div>
           </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  )
 
-  return createPortal(<ModalContent />, document.body)
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 overscroll-contain">
+            {report.photo_url && (
+              <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
+                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                <div className="p-2 bg-[#37B6E9]/10 dark:bg-[#37B6E9]/20 rounded-xl">
+                  <MapPin className="w-5 h-5 text-[#37B6E9]" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zona</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {report.zones?.name ?? 'Tidak diketahui'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                <div className="p-2 bg-[#4B4CED]/10 dark:bg-[#4B4CED]/20 rounded-xl">
+                  <Calendar className="w-5 h-5 text-[#4B4CED]" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Waktu</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {timeAgo(report.created_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {report.description && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                <div className="flex items-center gap-2 mb-3">
+                  <MessageSquare className="w-4 h-4 text-[#37B6E9]" />
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deskripsi</p>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {report.description}
+                </p>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#4B4CED]/5 to-[#37B6E9]/5 dark:from-[#4B4CED]/10 dark:to-[#37B6E9]/10 border border-[#4B4CED]/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4B4CED] to-[#37B6E9] flex items-center justify-center shadow-lg shadow-[#4B4CED]/30">
+                  <span className="text-sm font-black text-white">
+                    {report.users?.full_name?.charAt(0).toUpperCase() ?? 'U'}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelapor</p>
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {report.users?.full_name ?? 'Anonim'}
+                  </p>
+                </div>
+              </div>
+              <ShieldCheck className="w-6 h-6 text-[#4B4CED]/60" />
+            </div>
+
+            <div className="text-center pt-2 border-t border-slate-100 dark:border-[#353F54]">
+              <p className="text-xs text-slate-400">
+                Dilaporkan pada {formatDate(report.created_at)}
+              </p>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-slate-50 dark:bg-[#222834] border-t border-slate-200 dark:border-[#353F54] flex-shrink-0">
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-xl bg-slate-900 dark:bg-[#1a1f2e] text-white font-bold text-sm hover:bg-slate-800 dark:hover:bg-[#151a27] transition shadow-lg"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
 }
 
-// ── REPORT CARD ──
 function ReportCard({ report, onClick, onPhotoClick }) {
   const status = statusConfig[report.status] ?? statusConfig.pending
 
@@ -328,6 +295,26 @@ export default function UserFeed() {
   const [selectedReport, setSelectedReport] = useState(null)
   const [lightboxPhoto, setLightboxPhoto] = useState(null)
   const [userPoints, setUserPoints] = useState(null)
+
+  // ✅ SCROLL LOCK di parent — reliable karena selectedReport jelas null/ada
+  // Cleanup otomatis jalan setiap kali selectedReport berubah (buka → tutup)
+  useEffect(() => {
+    if (!selectedReport) return
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const prevOverflow = document.body.style.overflow
+    const prevPadding = document.body.style.paddingRight
+
+    document.body.style.overflow = 'hidden'
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+
+    return () => {
+      document.body.style.overflow = prevOverflow
+      document.body.style.paddingRight = prevPadding
+    }
+  }, [selectedReport])
 
   const fetchReports = useCallback(async () => {
     try {
@@ -411,7 +398,12 @@ export default function UserFeed() {
           </GlassCard>
         </motion.div>
 
-        {search && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-xs font-bold text-slate-400 dark:text-[#37B6E9] uppercase tracking-widest">{filteredReports.length} laporan ditemukan</motion.p>}
+        {search && (
+          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+            className="text-xs font-bold text-slate-400 dark:text-[#37B6E9] uppercase tracking-widest">
+            {filteredReports.length} laporan ditemukan
+          </motion.p>
+        )}
 
         {/* Grid */}
         {loading ? (
@@ -424,8 +416,12 @@ export default function UserFeed() {
               <div className="w-20 h-20 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-[#222834] dark:to-[#242C3B] rounded-3xl flex items-center justify-center mb-5 shadow-lg">
                 {search ? <AlertCircle className="w-10 h-10 text-slate-400" /> : <Activity className="w-10 h-10 text-[#37B6E9]" />}
               </div>
-              <p className="text-slate-700 dark:text-slate-200 font-black text-lg mb-1">{search ? 'Tidak ada hasil' : 'Belum ada laporan'}</p>
-              <p className="text-slate-400 dark:text-slate-500 text-sm max-w-xs">{search ? `Tidak ditemukan laporan untuk "${search}"` : 'Tap tombol + untuk laporkan parkir liar'}</p>
+              <p className="text-slate-700 dark:text-slate-200 font-black text-lg mb-1">
+                {search ? 'Tidak ada hasil' : 'Belum ada laporan'}
+              </p>
+              <p className="text-slate-400 dark:text-slate-500 text-sm max-w-xs">
+                {search ? `Tidak ditemukan laporan untuk "${search}"` : 'Tap tombol + untuk laporkan parkir liar'}
+              </p>
             </GlassCard>
           </motion.div>
         ) : (
@@ -437,9 +433,13 @@ export default function UserFeed() {
           </motion.div>
         )}
 
-        {/* ✅ MODAL & LIGHTBOX */}
-        <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
-        
+        {/* Modal & Lightbox */}
+        <AnimatePresence>
+          {selectedReport && (
+            <ReportDetailModal report={selectedReport} onClose={() => setSelectedReport(null)} />
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {lightboxPhoto && (
             <ImageLightbox src={lightboxPhoto} alt="Foto laporan" onClose={() => setLightboxPhoto(null)} />
