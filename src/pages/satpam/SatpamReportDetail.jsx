@@ -119,7 +119,7 @@ export default function SatpamReportDetail() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [zoomPhoto, setZoomPhoto] = useState(null); // 'original' | 'evidence'
+  const [zoomPhoto, setZoomPhoto] = useState(null);
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -187,6 +187,42 @@ export default function SatpamReportDetail() {
   const status = statusConfig[report.status] ?? statusConfig.pending;
   const StatusIcon = status.icon;
   const isResolved = report.status === "resolved";
+  const isInProgress = report.status === "in_progress";
+
+  // ── TIMELINE DINAMIS ──
+  const timeline = [
+    {
+      label: "Laporan Dikirim",
+      time: formatDateTime(report.created_at),
+      active: true,
+      color: "bg-[#37B6E9]",
+      description: "Laporan masuk ke sistem"
+    },
+    {
+      label: "Sedang Diproses",
+      time: isInProgress 
+        ? formatDateTime(report.updated_at) 
+        : isResolved 
+          ? "Diproses sebelumnya" 
+          : null,
+      active: isInProgress || isResolved,
+      color: "bg-amber-500",
+      description: isInProgress 
+        ? "Satpam mulai menangani" 
+        : isResolved 
+          ? "Telah melalui tahap ini" 
+          : "Menunggu penanganan satpam"
+    },
+    {
+      label: "Diselesaikan",
+      time: isResolved ? formatDateTime(report.updated_at) : null,
+      active: isResolved,
+      color: "bg-emerald-500",
+      description: isResolved 
+        ? "Laporan telah ditangani" 
+        : "Akan diproses setelah tahap sebelumnya"
+    },
+  ];
 
   return (
     <SatpamLayout title="Detail Laporan">
@@ -310,7 +346,6 @@ export default function SatpamReportDetail() {
                     </p>
                   </div>
 
-                  {/* Waktu Penyelesaian */}
                   {report.updated_at && (
                     <div className="flex items-center gap-2 mb-3 text-sm">
                       <Clock className="w-4 h-4 text-slate-400" />
@@ -320,7 +355,6 @@ export default function SatpamReportDetail() {
                     </div>
                   )}
 
-                  {/* Catatan Penanganan */}
                   {report.resolution_note && (
                     <div className="mb-4 p-3 rounded-xl bg-white dark:bg-[#1e2532] border border-slate-200 dark:border-[#353F54]">
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Catatan Penanganan</p>
@@ -328,7 +362,6 @@ export default function SatpamReportDetail() {
                     </div>
                   )}
 
-                  {/* 📸 Bukti Foto dari Satpam */}
                   {report.evidence_photo_url && (
                     <div>
                       <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -361,26 +394,30 @@ export default function SatpamReportDetail() {
                 </motion.div>
               )}
 
-              {/* Timeline Status */}
+              {/* 🔄 TIMELINE STATUS - FIXED DYNAMIC */}
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
                 <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">Riwayat Status</p>
-                <div className="relative border-l-2 border-slate-200 dark:border-[#353F54] ml-2 space-y-5">
-                  {[
-                    { label: "Laporan Dikirim", time: report.created_at, active: true, color: "bg-[#37B6E9]" },
-                    { label: "Sedang Diproses", time: (report.status === "in_progress" || report.status === "resolved") ? report.updated_at : null, active: report.status !== "pending", color: "bg-amber-500" },
-                    { label: "Diselesaikan", time: report.status === "resolved" ? report.updated_at : null, active: report.status === "resolved", color: "bg-emerald-500" },
-                  ].map((step, idx) => (
+                <div className="relative border-l-2 border-slate-200 dark:border-[#353F54] ml-2 space-y-6">
+                  {timeline.map((step, idx) => (
                     <div key={idx} className="relative pl-6">
                       <div className={cn(
-                        "absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-[#242C3B]",
+                        "absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-[#242C3B] transition-all duration-300",
                         step.active ? step.color : "bg-slate-300 dark:bg-[#353F54]"
                       )} />
-                      <div className={step.active ? "" : "opacity-40"}>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{step.label}</p>
+                      <div className={cn("transition-all duration-300", step.active ? "opacity-100" : "opacity-50")}>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{step.label}</p>
+                          {step.active && idx < timeline.findIndex(s => !s.active) && (
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                          )}
+                        </div>
                         {step.time ? (
-                          <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(step.time)}</p>
+                          <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{step.time}</p>
                         ) : (
-                          <p className="text-xs text-slate-300 dark:text-slate-600 mt-0.5">Belum diproses</p>
+                          <p className="text-xs text-slate-400 dark:text-slate-500 italic">{step.description}</p>
+                        )}
+                        {!step.active && step.description && (
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{step.description}</p>
                         )}
                       </div>
                     </div>

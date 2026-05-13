@@ -1,3 +1,4 @@
+// src/pages/user/UserReportDetail.jsx
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
@@ -7,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   MapPin, Calendar, Clock, X, ZoomIn, CheckCircle, 
   Activity, AlertTriangle, ShieldCheck, MessageSquare,
-  ArrowLeft, User
+  ArrowLeft, User, Camera, ExternalLink, FileText
 } from 'lucide-react'
 import { twMerge } from 'tailwind-merge'
 import { clsx } from 'clsx'
@@ -57,11 +58,14 @@ function timeAgo(dateStr) {
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
   return new Date(dateStr).toLocaleString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  })
+}
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric'
   })
 }
 
@@ -71,6 +75,36 @@ function sensorName(name) {
   return parts.map((part) => part.charAt(0).toUpperCase() + '*'.repeat(Math.max(part.length - 1, 3))).join(' ')
 }
 
+// ── ZOOM MODAL ──
+function ZoomModal({ src, alt, onClose }) {
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+        onClick={onClose}
+      >
+        <motion.img
+          initial={{ scale: 0.9 }}
+          animate={{ scale: 1 }}
+          exit={{ scale: 0.9 }}
+          src={src}
+          alt={alt}
+          className="max-w-full max-h-[90vh] rounded-xl object-contain shadow-2xl"
+        />
+        <button
+          className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition"
+          onClick={onClose}
+        >
+          <X className="w-6 h-6 text-white" />
+        </button>
+      </motion.div>
+    </AnimatePresence>
+  )
+}
+
 export default function UserReportDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -78,7 +112,7 @@ export default function UserReportDetail() {
   const [report, setReport] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [zoomPhoto, setZoomPhoto] = useState(false)
+  const [zoomPhoto, setZoomPhoto] = useState(null) // 'original' | 'evidence'
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -146,13 +180,16 @@ export default function UserReportDetail() {
   const status = statusConfig[report.status] ?? statusConfig.pending
   const StatusIcon = status.icon
   const isOwn = report.users?.id === user?.id
+  const isResolved = report.status === 'resolved'
 
+  // ── TIMELINE DINAMIS ──
   const timeline = [
     {
       label: 'Laporan Dikirim',
       time: formatDateTime(report.created_at),
       active: true,
-      color: 'bg-blue-600'
+      color: 'bg-blue-600',
+      description: 'Laporan masuk ke sistem'
     },
     {
       label: 'Sedang Diproses',
@@ -160,13 +197,21 @@ export default function UserReportDetail() {
         ? formatDateTime(report.updated_at) 
         : null,
       active: report.status === 'in_progress' || report.status === 'resolved',
-      color: 'bg-yellow-500'
+      color: 'bg-amber-500',
+      description: report.status === 'in_progress' 
+        ? 'Satpam mulai menangani' 
+        : report.status === 'resolved' 
+          ? 'Telah melalui tahap ini' 
+          : 'Menunggu penanganan satpam'
     },
     {
       label: 'Diselesaikan',
       time: report.status === 'resolved' ? formatDateTime(report.updated_at) : null,
       active: report.status === 'resolved',
-      color: 'bg-emerald-500'
+      color: 'bg-emerald-500',
+      description: report.status === 'resolved' 
+        ? 'Laporan telah ditangani' 
+        : 'Akan diproses setelah tahap sebelumnya'
     },
   ]
 
@@ -174,13 +219,15 @@ export default function UserReportDetail() {
     <UserLayout title="Detail Laporan">
       <div className="space-y-6 pb-10">
         {/* Back Button */}
-        <button
+        <motion.button
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition"
         >
           <ArrowLeft size={16} />
           Kembali
-        </button>
+        </motion.button>
 
         {/* Main Card */}
         <motion.div
@@ -214,21 +261,26 @@ export default function UserReportDetail() {
 
           {/* Content */}
           <div className="p-6 space-y-6">
-            {/* Photo */}
+            {/* Original Photo */}
             {report.photo_url && (
-              <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                <img 
-                  src={report.photo_url} 
-                  alt="Bukti laporan" 
-                  className="w-full aspect-video object-cover" 
-                />
-                <button
-                  onClick={() => setZoomPhoto(true)}
-                  className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/90 hover:scale-105"
-                >
-                  <ZoomIn size={14} strokeWidth={2.5} />
-                  Zoom
-                </button>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                  <Camera size={14} /> Foto Laporan
+                </p>
+                <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
+                  <img 
+                    src={report.photo_url} 
+                    alt="Bukti laporan" 
+                    className="w-full aspect-video object-cover" 
+                  />
+                  <button
+                    onClick={() => setZoomPhoto('original')}
+                    className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/90 hover:scale-105"
+                  >
+                    <ZoomIn size={14} strokeWidth={2.5} />
+                    Zoom
+                  </button>
+                </div>
               </div>
             )}
 
@@ -304,23 +356,98 @@ export default function UserReportDetail() {
               <ShieldCheck className="w-6 h-6 text-[#4B4CED]/60" />
             </div>
 
+            {/* ✅ EVIDENCE SECTION - Only show when resolved */}
+            {isResolved && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-[#242C3B] border border-emerald-200/60 dark:border-emerald-500/20"
+              >
+                <div className="flex items-center gap-2 mb-4">
+                  <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                    ✅ Laporan Telah Diselesaikan
+                  </p>
+                </div>
+
+                {/* Completion Time */}
+                {report.updated_at && (
+                  <div className="flex items-center gap-2 mb-3 text-sm">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-600 dark:text-slate-300">
+                      Diselesaikan pada <span className="font-bold">{formatDateTime(report.updated_at)}</span>
+                    </span>
+                  </div>
+                )}
+
+                {/* Resolution Note */}
+                {report.resolution_note && (
+                  <div className="mb-4 p-3 rounded-xl bg-white dark:bg-[#1e2532] border border-slate-200 dark:border-[#353F54]">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Catatan Penanganan</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {report.resolution_note}
+                    </p>
+                  </div>
+                )}
+
+                {/* 📸 Evidence Photo from Satpam */}
+                {report.evidence_photo_url && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Camera size={14} /> Bukti Penanganan oleh Satpam
+                    </p>
+                    <div className="relative group rounded-2xl overflow-hidden border-4 border-emerald-100 dark:border-emerald-900/30 shadow-lg">
+                      <img 
+                        src={report.evidence_photo_url} 
+                        alt="Bukti penanganan" 
+                        className="w-full aspect-video object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <button
+                        onClick={() => setZoomPhoto('evidence')}
+                        className="absolute bottom-3 right-3 bg-emerald-600/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-emerald-700 hover:scale-105"
+                      >
+                        <ZoomIn size={14} /> Zoom Bukti
+                      </button>
+                    </div>
+                    <a
+                      href={report.evidence_photo_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      <ExternalLink size={12} /> Buka di tab baru
+                    </a>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
             {/* Timeline */}
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
               <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">Riwayat Status</p>
-              <div className="relative border-l-2 border-slate-200 dark:border-[#353F54] ml-2 space-y-5">
+              <div className="relative border-l-2 border-slate-200 dark:border-[#353F54] ml-2 space-y-6">
                 {timeline.map((step, idx) => (
                   <div key={idx} className="relative pl-6">
                     <div className={cn(
-                      "absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-[#242C3B]",
-                      step.active ? step.color : 'bg-slate-200 dark:bg-[#353F54]'
+                      "absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white dark:border-[#242C3B] transition-all duration-300",
+                      step.active ? step.color : 'bg-slate-300 dark:bg-[#353F54]'
                     )} />
-                    <div className={step.active ? '' : 'opacity-40'}>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{step.label}</p>
-                      {step.time && (
-                        <p className="text-xs text-slate-400 mt-0.5">{step.time}</p>
+                    <div className={cn("transition-all duration-300", step.active ? 'opacity-100' : 'opacity-50')}>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{step.label}</p>
+                        {step.active && idx < timeline.findIndex(s => !s.active) && (
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                        )}
+                      </div>
+                      {step.time ? (
+                        <p className="text-xs font-medium text-slate-600 dark:text-slate-300">{step.time}</p>
+                      ) : (
+                        <p className="text-xs text-slate-400 dark:text-slate-500 italic">{step.description}</p>
                       )}
-                      {!step.time && !step.active && (
-                        <p className="text-xs text-slate-300 dark:text-slate-600 mt-0.5">Belum diproses</p>
+                      {!step.active && step.description && (
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{step.description}</p>
                       )}
                     </div>
                   </div>
@@ -331,7 +458,7 @@ export default function UserReportDetail() {
             {/* Footer Info */}
             <div className="text-center pt-4 border-t border-slate-100 dark:border-[#353F54]">
               <p className="text-xs text-slate-400">
-                Dilaporkan pada {formatDateTime(report.created_at)}
+                Dilaporkan pada {formatDate(report.created_at)}
               </p>
               <p className="text-xs text-slate-400 mt-1">
                 ID: #{report.id?.slice(0, 8)}
@@ -342,32 +469,13 @@ export default function UserReportDetail() {
       </div>
 
       {/* Zoom Photo Modal */}
-      <AnimatePresence>
-        {zoomPhoto && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4"
-            onClick={() => setZoomPhoto(false)}
-          >
-            <motion.img
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              src={report.photo_url}
-              alt="Foto laporan"
-              className="max-w-full max-h-full rounded-xl object-contain"
-            />
-            <button
-              className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition"
-              onClick={() => setZoomPhoto(false)}
-            >
-              <X className="w-6 h-6 text-white" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {zoomPhoto && (
+        <ZoomModal
+          src={zoomPhoto === 'original' ? report.photo_url : report.evidence_photo_url}
+          alt={zoomPhoto === 'original' ? 'Foto laporan' : 'Bukti penanganan'}
+          onClose={() => setZoomPhoto(null)}
+        />
+      )}
     </UserLayout>
   )
 }

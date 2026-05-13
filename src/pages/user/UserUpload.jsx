@@ -1,19 +1,28 @@
 // src/pages/user/UserUpload.jsx
-
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/AuthContext";
-// ✅ GANTI IMPORT: pakai fungsi dengan notifikasi WA
 import { createReportWithNotification, uploadPhoto, getZones } from "../../services/reports";
 import { detectPlateWithAPI, validateIndonesianPlate } from "../../services/plateDetection";
 import UserLayout from "../../components/layout/UserLayout";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  Camera, Image, X, CheckCircle, AlertCircle, ZoomIn, 
+  MapPin, FileText, ChevronDown, Ruler, Eye, Sun, AlignLeft 
+} from "lucide-react";
+import { twMerge } from "tailwind-merge";
+import { clsx } from "clsx";
+
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
 
 export default function UserUpload() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const fileRef = useRef();
+  const fileRef = useRef(null);
 
   const [zones, setZones] = useState([]);
   const [form, setForm] = useState({
@@ -28,13 +37,20 @@ export default function UserUpload() {
   const [detectionError, setDetectionError] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showCameraTips, setShowCameraTips] = useState(false);
 
   useEffect(() => {
     getZones().then(setZones).catch(console.error);
   }, []);
 
-  const handlePhoto = async (e) => {
-    const file = e.target.files[0];
+  // Cleanup preview URL
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  const handlePhoto = async (file) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
       setError("Ukuran foto maksimal 5MB");
@@ -78,7 +94,38 @@ export default function UserUpload() {
     }
   };
 
+  const handleFileInput = (e) => {
+    const file = e.target.files?.[0];
+    if (file) handlePhoto(file);
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const handleCameraClick = async () => {
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+      } catch (err) {
+        setShowCameraTips(true);
+        return;
+      }
+    }
+    fileRef.current?.click();
+  };
+
+  const handleGalleryClick = () => {
+    const input = fileRef.current;
+    if (input) {
+      const originalCapture = input.getAttribute("capture");
+      input.removeAttribute("capture");
+      input.click();
+      setTimeout(() => {
+        if (originalCapture) input.setAttribute("capture", originalCapture);
+      }, 100);
+    }
+  };
+
   const handleRemovePhoto = () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhoto(null);
     setPhotoPreview(null);
     setDetectionError("");
@@ -117,7 +164,6 @@ export default function UserUpload() {
     try {
       const photo_url = await uploadPhoto(photo, user.id);
       
-      // ✅ GANTI: pakai createReportWithNotification
       const report = await createReportWithNotification({
         user_id: user.id,
         plate_number: validatedPlate.toUpperCase(),
@@ -137,172 +183,390 @@ export default function UserUpload() {
   return (
     <UserLayout title="Laporkan Parkir Liar">
       <form onSubmit={handleSubmit} className="py-3 space-y-5">
-        {error && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {error}
-            <button onClick={() => setError("")} className="ml-auto text-red-400 hover:text-red-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
+        
+        {/* Error Banner */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-sm text-red-600 dark:text-red-400 flex items-center gap-2"
+            >
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="flex-1">{error}</span>
+              <button 
+                type="button"
+                onClick={() => setError("")} 
+                className="text-red-400 hover:text-red-600 transition p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Upload Foto */}
+        {/* 📸 Upload Foto Section */}
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-2">
-            Foto Kendaraan <span className="text-red-400">*</span>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
+            Foto Kendaraan <span className="text-red-500">*</span>
           </label>
 
-          {photoPreview ? (
-            <div className="relative rounded-2xl overflow-hidden border border-slate-200">
-              <img src={photoPreview} alt="Preview" className="w-full h-56 object-cover" />
-              <button
-                type="button"
-                onClick={handleRemovePhoto}
-                className="absolute top-3 right-3 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center shadow-lg transition"
-                title="Hapus foto"
+          <AnimatePresence mode="wait">
+            {photoPreview ? (
+              /* ✅ PHOTO PREVIEW - FIXED: No squash, normal size */
+              <motion.div
+                key="preview"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="relative rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-[#353F54] shadow-lg bg-slate-50 dark:bg-[#222834]"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="w-full h-44 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center gap-2 hover:border-blue-400 hover:bg-blue-50 transition cursor-pointer"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <span className="text-sm text-slate-400 font-medium">Tap untuk foto kendaraan</span>
-                <span className="text-xs text-slate-300">Pastikan plat nomor terlihat jelas</span>
-              </button>
-
-              <div className="bg-blue-50 rounded-xl p-3 mt-3">
-                <p className="text-xs font-semibold text-blue-600 mb-2">💡 Tips foto yang baik:</p>
-                <div className="space-y-1.5">
-                  {['Ambil dari jarak 1-2 meter', 'Pastikan plat nomor tidak terpotong', 'Hindari pantulan cahaya/silau', 'Foto dalam kondisi terang'].map((tip, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-xs text-slate-600">{tip}</span>
-                    </div>
-                  ))}
+                {/* Preview Image - Fixed aspect ratio, no squash */}
+                <div className="w-full aspect-video flex items-center justify-center p-2">
+                  <img 
+                    src={photoPreview} 
+                    alt="Preview kendaraan" 
+                    className="w-full h-full object-contain rounded-lg" 
+                  />
                 </div>
-              </div>
-            </>
-          )}
+                
+                {/* Overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none rounded-2xl" />
+                
+                {/* Actions */}
+                <div className="absolute top-3 right-3 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (photoPreview) URL.revokeObjectURL(photoPreview);
+                      setPhotoPreview(photoPreview);
+                    }}
+                    className="w-9 h-9 bg-black/60 backdrop-blur-sm hover:bg-black/80 rounded-full flex items-center justify-center text-white transition shadow-lg"
+                    title="Perbesar"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    className="w-9 h-9 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white transition shadow-lg"
+                    title="Ganti foto"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
 
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+                {/* Success badge */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-emerald-500/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  Foto siap
+                </div>
+              </motion.div>
+            ) : (
+              /* 📷 UPLOAD OPTIONS */
+              <motion.div
+                key="upload"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="space-y-3"
+              >
+                {/* Camera & Gallery Buttons */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Camera Button */}
+                  <button
+                    type="button"
+                    onClick={handleCameraClick}
+                    className="relative group flex flex-col items-center justify-center gap-3 p-5 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-2xl hover:border-[#37B6E9] hover:bg-[#37B6E9]/5 dark:hover:bg-[#37B6E9]/10 transition-all duration-300 cursor-pointer bg-white dark:bg-[#242C3B]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#37B6E9] to-[#4B4CED] flex items-center justify-center shadow-lg shadow-[#37B6E9]/30 group-hover:scale-110 transition-transform">
+                      <Camera className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Ambil Foto</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Gunakan kamera</p>
+                    </div>
+                    <span className="absolute inset-0 rounded-2xl border-2 border-[#37B6E9]/0 group-hover:border-[#37B6E9]/30 transition-all duration-300" />
+                  </button>
+
+                  {/* Gallery Button */}
+                  <button
+                    type="button"
+                    onClick={handleGalleryClick}
+                    className="relative group flex flex-col items-center justify-center gap-3 p-5 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-2xl hover:border-[#4B4CED] hover:bg-[#4B4CED]/5 dark:hover:bg-[#4B4CED]/10 transition-all duration-300 cursor-pointer bg-white dark:bg-[#242C3B]"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center shadow-lg shadow-slate-400/30 group-hover:scale-110 transition-transform">
+                      <Image className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Dari Galeri</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Pilih foto</p>
+                    </div>
+                    <span className="absolute inset-0 rounded-2xl border-2 border-[#4B4CED]/0 group-hover:border-[#4B4CED]/30 transition-all duration-300" />
+                  </button>
+                </div>
+
+                {/* Hidden file input */}
+                <input 
+                  ref={fileRef} 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  onChange={handleFileInput} 
+                  className="hidden" 
+                />
+
+                {/* Camera Tips Collapsible */}
+                <AnimatePresence>
+                  {showCameraTips && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-bold text-blue-700 dark:text-blue-300 mb-2">
+                              Izin Kamera Diperlukan
+                            </p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
+                              Browser membutuhkan izin untuk mengakses kamera. Silakan izinkan di pengaturan browser, atau gunakan tombol "Dari Galeri" untuk memilih foto yang sudah ada.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => setShowCameraTips(false)}
+                              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline"
+                            >
+                              Mengerti
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Photography Tips - Professional Version */}
+                <motion.div 
+                  className="bg-slate-50 dark:bg-[#222834] rounded-xl p-4 border border-slate-200 dark:border-[#353F54]"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 bg-[#37B6E9] rounded-full" />
+                    Panduan Foto
+                  </p>
+                  <div className="space-y-2.5">
+                    {[
+                      { icon: Ruler, text: "Jarak 1-2 meter dari kendaraan" },
+                      { icon: Eye, text: "Pastikan plat nomor terlihat jelas" },
+                      { icon: Sun, text: "Hindari silau atau bayangan di plat" },
+                      { icon: AlignLeft, text: "Foto dari sudut lurus, tidak miring" },
+                    ].map((tip, idx) => (
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + idx * 0.05 }}
+                        className="flex items-center gap-2.5"
+                      >
+                        <tip.icon className="w-4 h-4 text-[#37B6E9] shrink-0" />
+                        <span className="text-xs text-slate-600 dark:text-slate-300">{tip.text}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* Detection Progress */}
-        {detecting && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm font-medium text-blue-700">
-                {detectionProgress < 30 ? "Mempersiapkan gambar..." : 
-                 detectionProgress < 90 ? "Mendeteksi plat nomor..." : 
-                 "Memproses hasil..."}
-              </span>
-            </div>
-            <div className="w-full bg-blue-100 rounded-full h-2 overflow-hidden">
-              <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${detectionProgress}%` }} />
-            </div>
-            <p className="text-xs text-blue-500 mt-2">Menggunakan AI untuk deteksi otomatis</p>
-          </div>
-        )}
-
-        {/* Detection Error */}
-        {detectionError && !detecting && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-yellow-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="text-sm text-yellow-700">{detectionError}</span>
-          </div>
-        )}
-
-        {/* Form Fields */}
-        {!detecting && photo && (
-          <>
-            <div>
-              <Input
-                label={`Nomor Plat ${detectionError ? "(Isi Manual)" : "(Terdeteksi Otomatis)"}`}
-                name="plate_number"
-                value={form.plate_number}
-                onChange={handleChange}
-                placeholder="Contoh: B 1234 ABC"
-                required
-              />
-              {!detectionError && form.plate_number && (
-                <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Plat terdeteksi — bisa dikoreksi jika kurang tepat
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Zona Parkir <span className="text-red-400">*</span>
-              </label>
-              <select
-                name="zone_id"
-                value={form.zone_id}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white text-sm"
-                required
-              >
-                <option value="">Pilih zona parkir...</option>
-                {zones.map((z) => (
-                  <option key={z.id} value={z.id}>
-                    {z.name}
-                  </option>
-                ))}
-              </select>
-              {zones.length === 0 && <p className="text-xs text-slate-400 mt-1">Belum ada zona — hubungi admin</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">Keterangan Tambahan</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                placeholder="Contoh: Motor parkir di depan pintu darurat sejak tadi pagi"
-                rows={3}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none text-sm"
-              />
-            </div>
-
-            <Button type="submit" fullWidth disabled={loading} className="mt-2">
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Mengirim...
+        {/* 🔍 Detection Progress */}
+        <AnimatePresence>
+          {detecting && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="relative">
+                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="absolute inset-0 w-5 h-5 border-2 border-blue-300 dark:border-blue-700 rounded-full animate-ping opacity-30" />
+                </div>
+                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">
+                  {detectionProgress < 30 ? "Mempersiapkan..." : 
+                   detectionProgress < 90 ? "Mendeteksi plat nomor..." : 
+                   "Memproses hasil..."}
                 </span>
-              ) : (
-                "Kirim Laporan"
-              )}
-            </Button>
-          </>
-        )}
+              </div>
+              <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2 overflow-hidden">
+                <motion.div 
+                  className="bg-blue-600 dark:bg-blue-400 h-2 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${detectionProgress}%` }}
+                  transition={{ duration: 0.2 }}
+                />
+              </div>
+              <p className="text-xs text-blue-500 dark:text-blue-400 mt-2 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" />
+                Menggunakan AI untuk deteksi otomatis
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ⚠️ Detection Error */}
+        <AnimatePresence>
+          {detectionError && !detecting && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 flex items-start gap-3"
+            >
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-bold text-amber-700 dark:text-amber-300">Deteksi Tidak Berhasil</p>
+                <p className="text-sm text-amber-600 dark:text-amber-400 mt-0.5">{detectionError}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 📝 Form Fields (show after photo) */}
+        <AnimatePresence>
+          {!detecting && photo && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="space-y-4"
+            >
+              {/* Plate Number */}
+              <div>
+                <Input
+                  label={
+                    <span className="flex items-center gap-2">
+                      Nomor Plat
+                      {!detectionError && form.plate_number && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold rounded-full">
+                          <CheckCircle className="w-3 h-3" />
+                          Terdeteksi
+                        </span>
+                      )}
+                      {detectionError && (
+                        <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold">(Isi Manual)</span>
+                      )}
+                    </span>
+                  }
+                  name="plate_number"
+                  value={form.plate_number}
+                  onChange={handleChange}
+                  placeholder="Contoh: B 1234 ABC"
+                  required
+                  className={cn(
+                    "transition-all",
+                    !detectionError && form.plate_number && "ring-2 ring-emerald-500/30 border-emerald-300 dark:border-emerald-700"
+                  )}
+                />
+                {!detectionError && form.plate_number && (
+                  <motion.p 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-emerald-600 dark:text-emerald-400 mt-1.5 flex items-center gap-1.5"
+                  >
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    Plat terdeteksi — bisa dikoreksi jika kurang tepat
+                  </motion.p>
+                )}
+              </div>
+
+              {/* Zone Selector */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#37B6E9]" />
+                  Zona Parkir <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    name="zone_id"
+                    value={form.zone_id}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 pr-10 rounded-xl border border-slate-300 dark:border-[#353F54] bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#37B6E9] focus:border-transparent transition appearance-none text-sm"
+                    required
+                  >
+                    <option value="">Pilih zona parkir...</option>
+                    {zones.map((z) => (
+                      <option key={z.id} value={z.id}>{z.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
+                {zones.length === 0 && (
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    Belum ada zona — hubungi admin
+                  </p>
+                )}
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#37B6E9]" />
+                  Keterangan Tambahan
+                </label>
+                <textarea
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  placeholder="Contoh: Motor parkir di depan pintu darurat sejak tadi pagi..."
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-[#353F54] bg-white dark:bg-[#1e2532] text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#37B6E9] focus:border-transparent transition resize-none text-sm"
+                />
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 text-right">
+                  {form.description?.length || 0}/200 karakter
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Button 
+                  type="submit" 
+                  fullWidth 
+                  disabled={loading} 
+                  className={cn(
+                    "mt-2 py-3.5 text-sm font-bold shadow-lg shadow-[#37B6E9]/25",
+                    loading ? "opacity-70 cursor-not-allowed" : "hover:shadow-xl hover:shadow-[#37B6E9]/40"
+                  )}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2.5">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Mengirim Laporan...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Kirim Laporan
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </form>
     </UserLayout>
   );
