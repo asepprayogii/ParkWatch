@@ -232,9 +232,6 @@ export default function SatpamProfil() {
               <p className="text-slate-500 dark:text-[#37B6E9] font-bold mb-4 opacity-80">{user?.email}</p>
               
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
-                <div className="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-[#353F54] text-slate-600 dark:text-slate-300 text-xs font-black uppercase tracking-widest border border-slate-200 dark:border-slate-600">
-                  ID: {user?.id?.substring(0,8).toUpperCase()}
-                </div>
                 {!statsLoading && (
                   <div className={cn("flex items-center gap-2 px-4 py-1.5 rounded-xl text-xs font-black text-white shadow-lg", currentLevel.colorClass)}>
                     <CurrentIcon size={14} strokeWidth={3} />
