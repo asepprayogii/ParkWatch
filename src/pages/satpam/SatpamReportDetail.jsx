@@ -1,278 +1,413 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { useAuth } from '../../store/AuthContext'
-import { supabase } from '../../lib/supabase'
-import SatpamLayout from '../../components/layout/SatpamLayout'
-import { sendNotificationToUser } from '../../services/notifications'
+// src/pages/satpam/SatpamReportDetail.jsx
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "../../lib/supabase";
+import { useAuth } from "../../store/AuthContext";
+import SatpamLayout from "../../components/layout/SatpamLayout";
+import {
+  ArrowLeft, MapPin, Calendar, Clock, X, ZoomIn, CheckCircle,
+  Activity, AlertTriangle, ShieldCheck, MessageSquare, Camera,
+  User, FileText, ExternalLink
+} from "lucide-react";
+import clsx from "clsx";
+import { twMerge } from "tailwind-merge";
 
-const statusConfig = {
-  pending: { label: 'Menunggu', color: 'bg-yellow-100 text-yellow-700 border-yellow-200' },
-  in_progress: { label: 'Diproses', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-  resolved: { label: 'Selesai', color: 'bg-green-100 text-green-700 border-green-200' },
+function cn(...inputs) {
+  return twMerge(clsx(inputs));
+}
+
+function timeAgo(dateStr) {
+  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (diff < 60) return `${diff} dtk lalu`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
+  return `${Math.floor(diff / 86400)} hari lalu`;
 }
 
 function formatDateTime(dateStr) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('id-ID', {
-    day: 'numeric', month: 'short', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  })
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleString("id-ID", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  });
 }
 
-export default function SatpamReportDetail() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const { user } = useAuth()
-  const [report, setReport] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [updating, setUpdating] = useState(false)
-  const [zoomPhoto, setZoomPhoto] = useState(false)
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("id-ID", {
+    day: "numeric", month: "short", year: "numeric",
+  });
+}
 
-  const fetchReport = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('reports')
-        .select('*, user_id, users(full_name), zones(name)')
-        .eq('id', id)
-        .single()
-      if (error) throw error
-      if (!data) throw new Error('Laporan tidak ditemukan')
-      setReport(data)
-    } catch (err) {
-      console.error(err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
+const statusConfig = {
+  pending: {
+    label: "Menunggu",
+    color: "text-amber-600 dark:text-amber-400",
+    bg: "bg-amber-100/60 dark:bg-amber-500/10",
+    border: "border-amber-200/60 dark:border-amber-500/20",
+    dot: "bg-amber-500",
+    icon: AlertTriangle,
+    gradient: "from-amber-500/10 to-transparent",
+  },
+  in_progress: {
+    label: "Diproses",
+    color: "text-blue-600 dark:text-[#37B6E9]",
+    bg: "bg-blue-100/60 dark:bg-[#37B6E9]/10",
+    border: "border-blue-200/60 dark:border-[#37B6E9]/20",
+    dot: "bg-[#37B6E9]",
+    icon: Activity,
+    gradient: "from-[#37B6E9]/10 to-transparent",
+  },
+  resolved: {
+    label: "Selesai",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bg: "bg-emerald-100/60 dark:bg-emerald-500/10",
+    border: "border-emerald-200/60 dark:border-emerald-500/20",
+    dot: "bg-emerald-500",
+    icon: CheckCircle,
+    gradient: "from-emerald-500/10 to-transparent",
+  },
+};
+
+// ── GLASS CARD ──
+function GlassCard({ children, className, hover = false }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+      className={cn(
+        "bg-white dark:bg-[#242C3B] border border-slate-200 dark:border-[#353F54] shadow-xl rounded-[24px] overflow-hidden",
+        hover && "hover:shadow-2xl cursor-pointer transition-all duration-300",
+        className
+      )}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ── ZOOM MODAL ──
+function ZoomModal({ src, alt, onClose }) {
+  return createPortal(
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.img
+        initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
+        src={src} alt={alt} className="max-w-full max-h-[90vh] rounded-2xl object-contain shadow-2xl"
+      />
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center transition"
+      >
+        <X className="w-5 h-5 text-white" />
+      </button>
+    </motion.div>,
+    document.body
+  );
+}
+
+// ── MAIN COMPONENT ──
+export default function SatpamReportDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [zoomPhoto, setZoomPhoto] = useState(null); // 'original' | 'evidence'
 
   useEffect(() => {
-    fetchReport()
+    const fetchReport = async () => {
+      if (!id) return;
+      try {
+        const { data, error } = await supabase
+          .from("reports")
+          .select(`
+            *,
+            users (full_name, phone),
+            zones (name)
+          `)
+          .eq("id", id)
+          .single();
 
-    const channel = supabase
-      .channel(`satpam-report-detail-${id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'reports',
-        filter: `id=eq.${id}`
-      }, (payload) => setReport(prev => ({ ...prev, ...payload.new })))
-      .subscribe()
-
-    return () => supabase.removeChannel(channel)
-  }, [id])
-
-  const handleUpdateStatus = async (newStatus) => {
-    setUpdating(true)
-    try {
-      const { error } = await supabase
-        .from('reports')
-        .update({ status: newStatus })
-        .eq('id', id)
-      if (error) throw error
-
-      if (report?.user_id) {
-        await sendNotificationToUser({
-          userId: report.user_id,
-          reportId: report.id,
-          plateNumber: report.plate_number,
-          status: newStatus,
-        })
+        if (error) throw error;
+        if (!data) throw new Error("Laporan tidak ditemukan");
+        setReport(data);
+      } catch (err) {
+        console.error("Fetch report error:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
+    };
+    fetchReport();
 
-      await fetchReport()
-    } catch (err) {
-      console.error(err)
-      setError('Gagal update status: ' + err.message)
-    } finally {
-      setUpdating(false)
-    }
+    // Realtime update
+    const channel = supabase
+      .channel(`satpam-detail-${id}`)
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "reports", filter: `id=eq.${id}`
+      }, (payload) => setReport((prev) => ({ ...prev, ...payload.new })))
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [id]);
+
+  if (loading) {
+    return (
+      <SatpamLayout title="Detail Laporan">
+        <div className="space-y-4 py-4">
+          {[1, 2, 3].map((i) => (
+            <GlassCard key={i} className="h-28 animate-pulse" />
+          ))}
+        </div>
+      </SatpamLayout>
+    );
   }
 
-  if (loading) return (
-    <SatpamLayout title="Detail Laporan">
-      <div className="flex flex-col gap-3 py-4">
-        {[1,2,3].map(i => <div key={i} className="h-24 bg-white rounded-2xl animate-pulse border border-slate-200" />)}
-      </div>
-    </SatpamLayout>
-  )
+  if (error || !report) {
+    return (
+      <SatpamLayout title="Detail Laporan">
+        <GlassCard className="p-8 flex flex-col items-center justify-center text-center">
+          <AlertTriangle className="w-12 h-12 text-amber-500 mb-3" />
+          <p className="text-slate-600 dark:text-slate-300 font-medium mb-2">{error || "Laporan tidak ditemukan"}</p>
+          <button onClick={() => navigate(-1)} className="text-[#37B6E9] text-sm font-bold hover:underline">
+            ← Kembali
+          </button>
+        </GlassCard>
+      </SatpamLayout>
+    );
+  }
 
-  if (error) return (
-    <SatpamLayout title="Detail Laporan">
-      <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-red-200">
-        <p className="text-red-500 font-medium">{error}</p>
-        <button onClick={() => navigate(-1)} className="mt-4 text-blue-600 text-sm font-medium hover:underline">Kembali</button>
-      </div>
-    </SatpamLayout>
-  )
-
-  const status = statusConfig[report.status] ?? statusConfig.pending
+  const status = statusConfig[report.status] ?? statusConfig.pending;
+  const StatusIcon = status.icon;
+  const isResolved = report.status === "resolved";
 
   return (
     <SatpamLayout title="Detail Laporan">
-      {/* Kembali */}
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-4 text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
-      >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Kembali
-      </button>
+      <div className="w-full min-w-0 space-y-6 pb-10 px-2 md:px-4 lg:px-6">
+        
+        {/* Back Button */}
+        <motion.button
+          initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-[#37B6E9] transition"
+        >
+          <ArrowLeft size={16} />
+          Kembali
+        </motion.button>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        {/* Foto */}
-        {report.photo_url && (
-          <div
-            className="w-full h-56 bg-slate-100 overflow-hidden cursor-zoom-in"
-            onClick={() => setZoomPhoto(true)}
-          >
-            <img
-              src={report.photo_url}
-              alt="Bukti Laporan"
-              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-            />
-          </div>
-        )}
-
-        <div className="p-5">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 flex-wrap gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-slate-900 text-white font-mono text-sm px-3 py-1.5 rounded-lg tracking-wider">
-                {report.plate_number ?? '?????'}
-              </span>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${status.color}`}>
+        {/* Main Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: [0.23, 1, 0.32, 1] }}
+        >
+          <GlassCard className="overflow-visible">
+            {/* Header */}
+            <div className={cn("relative p-6 pb-4 bg-gradient-to-r", status.gradient)}>
+              <div className={cn(
+                "inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-lg",
+                status.bg, status.color, status.border, "border"
+              )}>
+                <StatusIcon size={14} strokeWidth={2.5} />
+                <span className={cn("w-2 h-2 rounded-full animate-pulse", status.dot)} />
                 {status.label}
-              </span>
-            </div>
-            <span className="text-xs text-slate-400">#{report.id?.slice(0, 8)}</span>
-          </div>
-
-          {/* Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
-            <div className="bg-slate-50 p-3 rounded-xl">
-              <p className="text-xs text-slate-400 mb-1">Zona</p>
-              <p className="text-sm font-medium text-slate-700 flex items-center gap-1">
-                <svg className="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                {report.zones?.name ?? '-'}
-              </p>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl">
-              <p className="text-xs text-slate-400 mb-1">Pelapor</p>
-              <p className="text-sm font-medium text-slate-700">{report.users?.full_name ?? 'Anonim'}</p>
-            </div>
-            <div className="bg-slate-50 p-3 rounded-xl">
-              <p className="text-xs text-slate-400 mb-1">Tanggal Lapor</p>
-              <p className="text-sm font-medium text-slate-700">{formatDateTime(report.created_at)}</p>
-            </div>
-            {report.description && (
-              <div className="md:col-span-2 bg-slate-50 p-3 rounded-xl">
-                <p className="text-xs text-slate-400 mb-1">Keterangan</p>
-                <p className="text-sm text-slate-600 leading-relaxed">{report.description}</p>
               </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          {report.status !== 'resolved' && (
-            <div className="flex gap-2 mb-5">
-              {report.status === 'pending' && (
-                <button
-                  onClick={() => handleUpdateStatus('in_progress')}
-                  disabled={updating}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50"
-                >
-                  {updating ? 'Memproses...' : 'Tangani Sekarang'}
-                </button>
-              )}
-              {report.status === 'in_progress' && (
-                <button
-                  onClick={() => handleUpdateStatus('resolved')}
-                  disabled={updating}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50"
-                >
-                  {updating ? 'Menyelesaikan...' : 'Tandai Selesai'}
-                </button>
-              )}
-            </div>
-          )}
-
-          {report.status === 'resolved' && (
-            <div className="mb-5 px-4 py-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2">
-              <svg className="w-5 h-5 text-green-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-green-700 font-medium">Laporan ini telah diselesaikan</p>
-            </div>
-          )}
-
-          {/* Timeline */}
-          <div className="bg-slate-50 rounded-xl p-4">
-            <p className="text-sm font-semibold text-slate-700 mb-4">Riwayat Status</p>
-            <div className="relative border-l-2 border-slate-200 ml-2 space-y-5">
-              <div className="relative pl-6">
-                <div className="absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white bg-blue-600" />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Laporan Dikirim</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(report.created_at)}</p>
+              <div className="mt-4">
+                <div className="inline-flex items-center bg-slate-900 dark:bg-[#1a1f2e] text-white px-4 py-2.5 rounded-xl shadow-lg">
+                  <span className="font-mono font-black tracking-widest text-lg">
+                    {report.plate_number ?? "?????"}
+                  </span>
                 </div>
               </div>
+            </div>
 
-              <div className={`relative pl-6 ${report.status === 'in_progress' || report.status === 'resolved' ? '' : 'opacity-40'}`}>
-                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white
-                  ${report.status === 'in_progress' || report.status === 'resolved' ? 'bg-yellow-500' : 'bg-slate-200'}`} />
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              
+              {/* Original Photo */}
+              {report.photo_url && (
                 <div>
-                  <p className="text-sm font-medium text-slate-700">Mulai Diproses</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {report.status === 'in_progress' || report.status === 'resolved'
-                      ? formatDateTime(report.updated_at)
-                      : 'Belum diproses'}
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <Camera size={14} /> Foto Laporan
                   </p>
+                  <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
+                    <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
+                    <button
+                      onClick={() => setZoomPhoto("original")}
+                      className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/90 hover:scale-105"
+                    >
+                      <ZoomIn size={14} /> Zoom
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Info Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                  <div className="p-2 bg-[#37B6E9]/10 dark:bg-[#37B6E9]/20 rounded-xl">
+                    <MapPin className="w-5 h-5 text-[#37B6E9]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Zona</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{report.zones?.name ?? "Tidak diketahui"}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                  <div className="p-2 bg-[#4B4CED]/10 dark:bg-[#4B4CED]/20 rounded-xl">
+                    <Calendar className="w-5 h-5 text-[#4B4CED]" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Waktu</p>
+                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{timeAgo(report.created_at)}</p>
+                  </div>
                 </div>
               </div>
 
-              <div className={`relative pl-6 ${report.status === 'resolved' ? '' : 'opacity-40'}`}>
-                <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white
-                  ${report.status === 'resolved' ? 'bg-green-500' : 'bg-slate-200'}`} />
-                <div>
-                  <p className="text-sm font-medium text-slate-700">Diselesaikan</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {report.status === 'resolved'
-                      ? formatDateTime(report.updated_at)
-                      : 'Belum selesai'}
-                  </p>
+              {/* Description */}
+              {report.description && (
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                  <div className="flex items-center gap-2 mb-3">
+                    <MessageSquare className="w-4 h-4 text-[#37B6E9]" />
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Deskripsi</p>
+                  </div>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">{report.description}</p>
+                </div>
+              )}
+
+              {/* Reporter */}
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-[#4B4CED]/5 to-[#37B6E9]/5 dark:from-[#4B4CED]/10 dark:to-[#37B6E9]/10 border border-[#4B4CED]/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                    <User className="w-5 h-5 text-slate-400 dark:text-slate-500" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pelapor</p>
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300">
+                      {report.users?.full_name ? report.users.full_name.split(' ').map(p => p[0].toUpperCase() + '***').join(' ') : "Anonim"}
+                    </p>
+                  </div>
+                </div>
+                <ShieldCheck className="w-6 h-6 text-[#4B4CED]/60" />
+              </div>
+
+              {/* ✅ EVIDENCE SECTION (Hanya jika resolved) */}
+              {isResolved && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                  className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-[#242C3B] border border-emerald-200/60 dark:border-emerald-500/20"
+                >
+                  <div className="flex items-center gap-2 mb-4">
+                    <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                    <p className="text-sm font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                      ✅ Laporan Telah Diselesaikan
+                    </p>
+                  </div>
+
+                  {/* Waktu Penyelesaian */}
+                  {report.updated_at && (
+                    <div className="flex items-center gap-2 mb-3 text-sm">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      <span className="text-slate-600 dark:text-slate-300">
+                        Diselesaikan pada <span className="font-bold">{formatDateTime(report.updated_at)}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Catatan Penanganan */}
+                  {report.resolution_note && (
+                    <div className="mb-4 p-3 rounded-xl bg-white dark:bg-[#1e2532] border border-slate-200 dark:border-[#353F54]">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Catatan Penanganan</p>
+                      <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{report.resolution_note}</p>
+                    </div>
+                  )}
+
+                  {/* 📸 Bukti Foto dari Satpam */}
+                  {report.evidence_photo_url && (
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Camera size={14} /> Bukti Penanganan oleh Satpam
+                      </p>
+                      <div className="relative group rounded-2xl overflow-hidden border-4 border-emerald-100 dark:border-emerald-900/30 shadow-lg">
+                        <img 
+                          src={report.evidence_photo_url} 
+                          alt="Bukti penanganan" 
+                          className="w-full aspect-video object-cover" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <button
+                          onClick={() => setZoomPhoto("evidence")}
+                          className="absolute bottom-3 right-3 bg-emerald-600/90 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-emerald-700 hover:scale-105"
+                        >
+                          <ZoomIn size={14} /> Zoom Bukti
+                        </button>
+                      </div>
+                      <a
+                        href={report.evidence_photo_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      >
+                        <ExternalLink size={12} /> Buka di tab baru
+                      </a>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+
+              {/* Timeline Status */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#222834] border border-slate-200 dark:border-[#353F54]">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-4">Riwayat Status</p>
+                <div className="relative border-l-2 border-slate-200 dark:border-[#353F54] ml-2 space-y-5">
+                  {[
+                    { label: "Laporan Dikirim", time: report.created_at, active: true, color: "bg-[#37B6E9]" },
+                    { label: "Sedang Diproses", time: (report.status === "in_progress" || report.status === "resolved") ? report.updated_at : null, active: report.status !== "pending", color: "bg-amber-500" },
+                    { label: "Diselesaikan", time: report.status === "resolved" ? report.updated_at : null, active: report.status === "resolved", color: "bg-emerald-500" },
+                  ].map((step, idx) => (
+                    <div key={idx} className="relative pl-6">
+                      <div className={cn(
+                        "absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white dark:border-[#242C3B]",
+                        step.active ? step.color : "bg-slate-300 dark:bg-[#353F54]"
+                      )} />
+                      <div className={step.active ? "" : "opacity-40"}>
+                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{step.label}</p>
+                        {step.time ? (
+                          <p className="text-xs text-slate-400 mt-0.5">{formatDateTime(step.time)}</p>
+                        ) : (
+                          <p className="text-xs text-slate-300 dark:text-slate-600 mt-0.5">Belum diproses</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
+
+              {/* Footer */}
+              <div className="text-center pt-4 border-t border-slate-100 dark:border-[#353F54]">
+                <p className="text-xs text-slate-400">ID Laporan: <span className="font-mono">#{id?.slice(0, 8)}</span></p>
+                <p className="text-xs text-slate-400 mt-1">Dilaporkan pada {formatDate(report.created_at)}</p>
+              </div>
             </div>
-          </div>
-        </div>
+          </GlassCard>
+        </motion.div>
       </div>
 
-      {/* Zoom Photo Modal */}
-      {zoomPhoto && report.photo_url && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onClick={() => setZoomPhoto(false)}
-        >
-          <img
-            src={report.photo_url}
-            alt="Foto laporan"
-            className="max-w-full max-h-full rounded-xl object-contain"
+      {/* Zoom Modal */}
+      <AnimatePresence>
+        {zoomPhoto && (
+          <ZoomModal
+            src={zoomPhoto === "original" ? report.photo_url : report.evidence_photo_url}
+            alt={zoomPhoto === "original" ? "Foto laporan" : "Bukti penanganan"}
+            onClose={() => setZoomPhoto(null)}
           />
-          <button
-            className="absolute top-4 right-4 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center"
-            onClick={() => setZoomPhoto(false)}
-          >
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </SatpamLayout>
-  )
+  );
 }
