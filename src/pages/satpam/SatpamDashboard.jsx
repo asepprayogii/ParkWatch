@@ -6,7 +6,7 @@ import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { updateReportStatusWithNotification } from "../../services/reports";
 import SatpamLayout from "../../components/layout/SatpamLayout";
-import { MapPin, Clock, X, AlertTriangle, Activity, CheckCircle, Camera, FileText, Send, ShieldCheck } from "lucide-react";
+import { MapPin, Clock, X, AlertTriangle, Activity, CheckCircle, Camera, FileText, Send, ShieldCheck, ZoomIn } from "lucide-react";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -180,7 +180,156 @@ function ReportDetailModal({ report, onClose }) {
   );
 }
 
-// ── MAIN COMPONENT
+// ── EVIDENCE MODAL - FIXED MOBILE POSITIONING ──
+function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, note, setNote }) {
+  return createPortal(
+    <>
+      <ScrollLock />
+      <motion.div
+        initial={{ opacity: 0 }} 
+        animate={{ opacity: 1 }} 
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+          animate={{ opacity: 1, scale: 1, y: 0 }} 
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+          className="w-full max-w-md max-h-[90vh] flex flex-col" 
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="bg-white dark:bg-[#242C3B] rounded-[28px] shadow-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden flex flex-col h-full">
+            
+            {/* Header - Sticky */}
+            <div className="relative p-5 pb-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border-b border-slate-200 dark:border-[#353F54] flex-shrink-0">
+              <button 
+                onClick={onClose} 
+                className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1f2e]/90 backdrop-blur-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition shadow-lg z-10"
+              >
+                <X size={18} strokeWidth={2.5} />
+              </button>
+              <h3 className="font-black text-lg text-slate-800 dark:text-white pr-10">Selesaikan Laporan</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Plat: <span className="font-mono font-bold">{report.plate_number}</span>
+              </p>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-5 overscroll-contain">
+              
+              {/* Photo Upload */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Foto Bukti <span className="text-slate-400 font-normal">(Opsional)</span>
+                </label>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  capture="environment" 
+                  className="hidden" 
+                  id="evidence-photo" 
+                  onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} 
+                />
+                {photo ? (
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-[#353F54]">
+                    <img 
+                      src={URL.createObjectURL(photo)} 
+                      alt="Bukti" 
+                      className="w-full h-48 object-cover" 
+                    />
+                    <button 
+                      onClick={() => setPhoto(null)} 
+                      className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition"
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <label 
+                    htmlFor="evidence-photo" 
+                    className="block w-full h-32 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition cursor-pointer"
+                  >
+                    <Camera size={24} className="text-slate-400" />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">Ambil / Upload foto</span>
+                  </label>
+                )}
+              </div>
+
+              {/* Catatan */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Catatan Penanganan
+                </label>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  rows={3}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#353F54] bg-slate-50 dark:bg-[#1e2532] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#37B6E9] transition resize-none text-sm"
+                  placeholder="Contoh: Kendaraan sudah dipindahkan ke area parkir resmi..."
+                />
+              </div>
+            </div>
+
+            {/* Footer - Sticky */}
+            <div className="px-5 py-4 bg-slate-50 dark:bg-[#222834] border-t border-slate-200 dark:border-[#353F54] flex-shrink-0">
+              <div className="flex gap-3">
+                <button 
+                  onClick={onClose} 
+                  className="flex-1 py-3 rounded-xl bg-slate-200 dark:bg-[#353F54] text-slate-700 dark:text-slate-200 font-bold text-sm hover:bg-slate-300 dark:hover:bg-[#44506B] transition"
+                >
+                  Batal
+                </button>
+                <button 
+                  onClick={onSubmit} 
+                  disabled={uploading}
+                  className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {uploading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Mengirim...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} /> Selesaikan
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </motion.div>
+      </motion.div>
+    </>,
+    document.body
+  );
+}
+
+// ── SCROLL LOCK COMPONENT ──
+function ScrollLock() {
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPadding = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    
+    document.body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPadding;
+    };
+  }, []);
+  
+  return null;
+}
+
+// ── MAIN COMPONENT ──
 export default function SatpamDashboard() {
   const { user } = useAuth();
   const [reports, setReports] = useState([]);
@@ -356,7 +505,7 @@ export default function SatpamDashboard() {
             </GlassCard>
           ) : reports.length === 0 ? (
             <GlassCard hover={false} className="p-10 flex flex-col items-center justify-center text-center">
-              <p className="text-slate-500 dark:text-slate-400 font-medium">Zona aman 🎉</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">Zona aman</p>
             </GlassCard>
           ) : (
             <motion.div
@@ -454,68 +603,19 @@ export default function SatpamDashboard() {
         )}
       </AnimatePresence>
 
-      {/* 📸 Evidence Upload Modal (Konsep UserFeed) */}
+      {/* 📸 Evidence Upload Modal - FIXED */}
       <AnimatePresence>
         {evidenceModal && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex items-start justify-center pt-8 pb-8 px-4 bg-black/70 backdrop-blur-md overflow-y-auto overscroll-contain"
-            onClick={() => setEvidenceModal(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-              className="w-full max-w-md my-auto" onClick={(e) => e.stopPropagation()}
-            >
-              <div className="bg-white dark:bg-[#242C3B] rounded-[28px] shadow-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden flex flex-col max-h-[90vh]">
-                <div className="relative p-5 pb-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 flex-shrink-0 border-b border-slate-200 dark:border-[#353F54]">
-                  <button onClick={() => setEvidenceModal(null)} className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1f2e]/90 backdrop-blur-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition shadow-lg z-10">
-                    <X size={18} strokeWidth={2.5} />
-                  </button>
-                  <h3 className="font-black text-lg text-slate-800 dark:text-white">Selesaikan Laporan</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Plat: {evidenceModal.plate_number}</p>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-5 space-y-5 overscroll-contain">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Foto Bukti <span className="text-slate-400 font-normal">(Opsional)</span></label>
-                    <input type="file" accept="image/*" capture="environment" className="hidden" id="evidence-photo" onChange={(e) => setEvidencePhoto(e.target.files?.[0] ?? null)} />
-                    {evidencePhoto ? (
-                      <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-[#353F54]">
-                        <img src={URL.createObjectURL(evidencePhoto)} alt="Bukti" className="w-full h-48 object-cover" />
-                        <button onClick={() => setEvidencePhoto(null)} className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition">
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ) : (
-                      <label htmlFor="evidence-photo" className="block w-full h-32 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition cursor-pointer">
-                        <Camera size={24} className="text-slate-400" />
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Ambil / Upload foto</span>
-                      </label>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">Catatan Penanganan</label>
-                    <textarea
-                      value={evidenceNote}
-                      onChange={(e) => setEvidenceNote(e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#353F54] bg-slate-50 dark:bg-[#1e2532] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#37B6E9] transition resize-none text-sm"
-                      placeholder="Contoh: Kendaraan sudah dipindahkan ke area parkir resmi..."
-                    />
-                  </div>
-                </div>
-
-                <div className="px-5 py-4 bg-slate-50 dark:bg-[#222834] border-t border-slate-200 dark:border-[#353F54] flex-shrink-0 flex gap-3">
-                  <button onClick={() => setEvidenceModal(null)} className="flex-1 py-3 rounded-xl bg-slate-200 dark:bg-[#353F54] text-slate-700 dark:text-slate-200 font-bold text-sm hover:bg-slate-300 dark:hover:bg-[#44506B] transition">Batal</button>
-                  <button onClick={handleEvidenceSubmit} disabled={evidenceUploading} className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold text-sm transition disabled:opacity-50 flex items-center justify-center gap-2">
-                    {evidenceUploading ? "Mengirim..." : <><Send size={16} /> Selesaikan</>}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
+          <EvidenceModal
+            report={evidenceModal}
+            onClose={() => setEvidenceModal(null)}
+            onSubmit={handleEvidenceSubmit}
+            uploading={evidenceUploading}
+            photo={evidencePhoto}
+            setPhoto={setEvidencePhoto}
+            note={evidenceNote}
+            setNote={setEvidenceNote}
+          />
         )}
       </AnimatePresence>
     </SatpamLayout>
