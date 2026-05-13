@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../../store/AuthContext'
-import { useTheme } from '../../store/ThemeContext' // ✅ Import useTheme
+import { useTheme } from '../../store/ThemeContext'
 import { getUnreadCount } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'
 import { logout } from '../../services/auth'
@@ -12,7 +12,7 @@ import PageTransition from '../ui/PageTransition'
 export default function SatpamLayout({ title, children }) {
   const [collapsed, setCollapsed] = useState(false)
   const { user } = useAuth()
-  const { theme, toggleTheme } = useTheme() // ✅ Ambil theme & toggle
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [unread, setUnread] = useState(0)
 
@@ -46,7 +46,7 @@ export default function SatpamLayout({ title, children }) {
           <span className="font-bold text-slate-800 dark:text-white text-sm">ParkWatch</span>
         </div>
 
-        {/* ✅ Actions: Theme Toggle + Logout */}
+        {/* Actions: Theme Toggle + Logout */}
         <div className="flex items-center gap-2">
           <button 
             onClick={toggleTheme}
@@ -70,8 +70,10 @@ export default function SatpamLayout({ title, children }) {
         </div>
       </div>
 
+      {/* ✅ MAIN CONTENT - FIX: w-full min-w-0, hapus max-w-5xl mx-auto */}
       <main className={`transition-all duration-300 pt-14 pb-20 px-4 md:pt-8 md:pb-8 md:px-6 ${collapsed ? 'md:ml-16' : 'md:ml-56'}`}>
-        <div className="max-w-5xl mx-auto">
+        {/* ✅ GANTI: max-w-5xl mx-auto → w-full min-w-0 (konsep UserFeed) */}
+        <div className="w-full min-w-0">
           <div className="hidden md:block mb-6">
             <h1 className="text-xl font-bold text-slate-800 dark:text-white">{title}</h1>
           </div>
