@@ -1,20 +1,24 @@
 import { useEffect, useState, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom' // <--- PENTING
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/AuthContext'
 import { getNotifications, markAsRead, markAllAsRead } from '../../services/notifications'
 import { supabase } from '../../lib/supabase'
 import UserLayout from '../../components/layout/UserLayout'
+import { motion } from 'framer-motion'
+import { 
+  Bell, CheckCircle, Activity, AlertTriangle, 
+  MapPin, Clock, Eye
+} from 'lucide-react'
 
-// Helper icon user
 const getStatusIcon = (message) => {
   const msg = message.toLowerCase()
   if (msg.includes('sedang') || msg.includes('proses')) {
-    return <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    return <Activity className="w-5 h-5 text-blue-600 dark:text-blue-400" />
   }
   if (msg.includes('selesai') || msg.includes('resolved')) {
-    return <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+    return <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
   }
-  return <svg className="w-5 h-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+  return <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
 }
 
 function timeAgo(dateStr) {
@@ -27,7 +31,7 @@ function timeAgo(dateStr) {
 
 export default function UserNotifications() {
   const { user } = useAuth()
-  const navigate = useNavigate() // <--- PENTING
+  const navigate = useNavigate()
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -35,19 +39,28 @@ export default function UserNotifications() {
     try {
       const data = await getNotifications(user.id)
       setNotifications(data)
-    } catch (err) { console.error(err) } finally { setLoading(false) }
+    } catch (err) { 
+      console.error(err) 
+    } finally { 
+      setLoading(false) 
+    }
   }, [user.id])
 
   useEffect(() => { fetchNotifications() }, [fetchNotifications])
-  
+
   useEffect(() => {
-    const channel = supabase.channel('user-notif-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchNotifications)
+    const channel = supabase
+      .channel('user-notif-realtime')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'notifications', 
+        filter: `user_id=eq.${user.id}` 
+      }, fetchNotifications)
       .subscribe()
     return () => supabase.removeChannel(channel)
   }, [fetchNotifications, user.id])
 
-  // ✅ FUNGSI BARU: Baca lalu arahkan ke detail
   const handleOpenReport = async (reportId, notifId) => {
     await markAsRead(notifId)
     setNotifications(prev => prev.map(n => n.id === notifId ? { ...n, is_read: true } : n))
@@ -62,71 +75,106 @@ export default function UserNotifications() {
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   return (
-    <UserLayout title="Notifikasi Saya">
-      {unreadCount > 0 && (
-        <div className="flex items-center justify-between mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-          <span className="text-sm text-blue-800 font-medium">
-            <span className="font-bold">{unreadCount}</span> pesan belum dibaca
-          </span>
-          <button onClick={handleMarkAllAsRead} className="text-xs text-blue-600 font-semibold hover:underline">
-            Tandai semua dibaca
-          </button>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex flex-col gap-3">
-          {[1, 2, 3].map(i => <div key={i} className="bg-white rounded-2xl border border-slate-200 h-20 animate-pulse" />)}
-        </div>
-      ) : notifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-          </div>
-          <p className="text-slate-500 font-medium">Belum ada notifikasi</p>
-          <p className="text-slate-400 text-sm mt-1">Update status laporan akan muncul di sini</p>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {notifications.map(notif => (
-            <button
-              key={notif.id}
-              // ✅ PERUBAHAN: Panggil handleOpenReport
-              onClick={() => handleOpenReport(notif.related_report_id, notif.id)}
-              className={`w-full text-left bg-white rounded-2xl border px-4 py-3 transition-all hover:shadow-md
-                ${notif.is_read ? 'border-slate-200 opacity-80' : 'border-blue-200 bg-blue-50/40'}`}
+    <UserLayout title="Notifikasi">
+      <div className="py-3 space-y-4">
+        {unreadCount > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl"
+          >
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm text-blue-800 dark:text-blue-300 font-bold">
+                <span className="font-black">{unreadCount}</span> pesan belum dibaca
+              </span>
+            </div>
+            <button 
+              onClick={handleMarkAllAsRead} 
+              className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline"
             >
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${notif.is_read ? 'bg-slate-100' : 'bg-blue-100'}`}>
-                  {getStatusIcon(notif.message)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-xs font-semibold ${notif.is_read ? 'text-slate-400' : 'text-blue-700'}`}>
-                      {notif.is_read ? 'Update Status' : 'Status Diperbarui'}
-                    </p>
-                    {!notif.is_read && <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />}
+              Tandai semua dibaca
+            </button>
+          </motion.div>
+        )}
+
+        {loading ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54] h-24 animate-pulse" />
+            ))}
+          </div>
+        ) : notifications.length === 0 ? (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-[#242C3B] rounded-2xl border border-slate-200 dark:border-[#353F54]"
+          >
+            <div className="w-16 h-16 bg-slate-100 dark:bg-[#2a3142] rounded-2xl flex items-center justify-center mb-4">
+              <Bell className="w-8 h-8 text-slate-400" />
+            </div>
+            <p className="text-slate-500 dark:text-slate-400 font-bold mb-1">Belum ada notifikasi</p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm">Update status laporan akan muncul di sini</p>
+          </motion.div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {notifications.map(notif => (
+              <motion.button
+                key={notif.id}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                onClick={() => handleOpenReport(notif.related_report_id, notif.id)}
+                className={`w-full text-left rounded-2xl border px-4 py-4 transition-all hover:shadow-md ${
+                  notif.is_read 
+                    ? 'bg-white dark:bg-[#242C3B] border-slate-200 dark:border-[#353F54] opacity-80' 
+                    : 'bg-blue-50/40 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                    notif.is_read ? 'bg-slate-100 dark:bg-[#2a3142]' : 'bg-blue-100 dark:bg-blue-900/30'
+                  }`}>
+                    {getStatusIcon(notif.message)}
                   </div>
-                  <p className="text-sm text-slate-700 mt-0.5">{notif.message}</p>
-                  {notif.reports?.plate_number && (
-                    <div className="mt-1.5 inline-flex items-center gap-1.5">
-                      <span className="bg-slate-900 text-white font-mono text-xs px-2 py-0.5 rounded-md tracking-wider">
-                        {notif.reports.plate_number}
-                      </span>
-                      {notif.reports?.zones?.name && (
-                        <span className="text-xs text-slate-400">{notif.reports.zones.name}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <p className={`text-xs font-bold ${
+                        notif.is_read ? 'text-slate-400 dark:text-slate-500' : 'text-blue-700 dark:text-blue-400'
+                      }`}>
+                        {notif.is_read ? 'Update Status' : 'Status Diperbarui'}
+                      </p>
+                      {!notif.is_read && (
+                        <div className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
                       )}
                     </div>
-                  )}
-                  <p className="text-xs text-slate-400 mt-1.5">{timeAgo(notif.created_at)}</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-200 mb-2">
+                      {notif.message}
+                    </p>
+                    {notif.reports?.plate_number && (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="bg-slate-900 dark:bg-[#1a1f2e] text-white font-mono text-xs px-2 py-1 rounded-md tracking-wider font-bold">
+                          {notif.reports.plate_number}
+                        </span>
+                        {notif.reports?.zones?.name && (
+                          <div className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
+                            <MapPin className="w-3 h-3" />
+                            {notif.reports.zones.name}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 mt-2 text-xs text-slate-400 dark:text-slate-500">
+                      <Clock className="w-3 h-3" />
+                      {timeAgo(notif.created_at)}
+                    </div>
+                  </div>
+                  <Eye className="w-4 h-4 text-slate-300 dark:text-slate-600 shrink-0 mt-1" />
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
+              </motion.button>
+            ))}
+          </div>
+        )}
+      </div>
     </UserLayout>
   )
 }
