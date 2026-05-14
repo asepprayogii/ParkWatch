@@ -6,7 +6,7 @@ import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { updateReportStatusWithNotification } from "../../services/reports";
 import SatpamLayout from "../../components/layout/SatpamLayout";
-import { MapPin, Clock, X, AlertTriangle, Activity, CheckCircle, Camera, FileText, Send, ShieldCheck, ZoomIn } from "lucide-react";
+import { MapPin, Clock, X, AlertTriangle, Activity, CheckCircle, Camera, Image, FileText, Send, ShieldCheck, ZoomIn } from "lucide-react";
 import clsx from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -180,28 +180,52 @@ function ReportDetailModal({ report, onClose }) {
   );
 }
 
-// ── EVIDENCE MODAL - FIXED MOBILE POSITIONING ──
+// ── EVIDENCE MODAL - DENGAN PILIHAN KAMERA/GALERI ──
 function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, note, setNote }) {
+  const fileRef = useState(null)[0];
+
+  const handleCameraClick = () => {
+    if (fileRef) {
+      const input = fileRef;
+      input.setAttribute("capture", "environment");
+      input.click();
+    }
+  };
+
+  const handleGalleryClick = () => {
+    if (fileRef) {
+      const input = fileRef;
+      input.removeAttribute("capture");
+      input.click();
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhoto(file);
+    }
+  };
+
   return createPortal(
     <>
       <ScrollLock />
       <motion.div
-        initial={{ opacity: 0 }} 
-        animate={{ opacity: 1 }} 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md"
         onClick={onClose}
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-          animate={{ opacity: 1, scale: 1, y: 0 }} 
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
-          className="w-full max-w-md max-h-[90vh] flex flex-col" 
+          className="w-full max-w-md max-h-[90vh] flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="bg-white dark:bg-[#242C3B] rounded-[28px] shadow-2xl border border-slate-200 dark:border-[#353F54] overflow-hidden flex flex-col h-full">
-            
             {/* Header - Sticky */}
             <div className="relative p-5 pb-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border-b border-slate-200 dark:border-[#353F54] flex-shrink-0">
               <button 
@@ -219,19 +243,12 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
             {/* Scrollable Content */}
             <div className="flex-1 overflow-y-auto p-5 space-y-5 overscroll-contain">
               
-              {/* Photo Upload */}
+              {/* Photo Upload - Dengan Pilihan Kamera/Galeri */}
               <div>
                 <label className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
                   Foto Bukti <span className="text-slate-400 font-normal">(Opsional)</span>
                 </label>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment" 
-                  className="hidden" 
-                  id="evidence-photo" 
-                  onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} 
-                />
+
                 {photo ? (
                   <div className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-[#353F54]">
                     <img 
@@ -247,14 +264,52 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
                     </button>
                   </div>
                 ) : (
-                  <label 
-                    htmlFor="evidence-photo" 
-                    className="block w-full h-32 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl flex flex-col items-center justify-center gap-2 hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition cursor-pointer"
-                  >
-                    <Camera size={24} className="text-slate-400" />
-                    <span className="text-xs text-slate-500 dark:text-slate-400">Ambil / Upload foto</span>
-                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* Camera Button */}
+                    <button
+                      type="button"
+                      onClick={handleCameraClick}
+                      className="relative group flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl hover:border-green-400 hover:bg-green-50/50 dark:hover:bg-green-900/10 transition-all duration-300 cursor-pointer bg-white dark:bg-[#1e2532]"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#37B6E9] to-[#4B4CED] flex items-center justify-center shadow-lg shadow-[#37B6E9]/30 group-hover:scale-110 transition-transform">
+                        <Camera className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Ambil Foto</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Gunakan kamera</p>
+                      </div>
+                    </button>
+
+                    {/* Gallery Button */}
+                    <button
+                      type="button"
+                      onClick={handleGalleryClick}
+                      className="relative group flex flex-col items-center justify-center gap-2 p-4 border-2 border-dashed border-slate-300 dark:border-[#353F54] rounded-xl hover:border-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all duration-300 cursor-pointer bg-white dark:bg-[#1e2532]"
+                    >
+                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-400 to-slate-500 flex items-center justify-center shadow-lg shadow-slate-400/30 group-hover:scale-110 transition-transform">
+                        <Image className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">Dari Galeri</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Pilih foto</p>
+                      </div>
+                    </button>
+                  </div>
                 )}
+
+                {/* Hidden file input */}
+                <input
+                  ref={(el) => {
+                    if (el && !fileRef) {
+                      // Simpan reference pertama kali
+                      window.evidenceFileInput = el;
+                    }
+                  }}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
 
               {/* Catatan */}
@@ -299,7 +354,6 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
                 </button>
               </div>
             </div>
-
           </div>
         </motion.div>
       </motion.div>
@@ -338,7 +392,7 @@ export default function SatpamDashboard() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
-
+  
   // Evidence modal state
   const [evidenceModal, setEvidenceModal] = useState(null);
   const [evidencePhoto, setEvidencePhoto] = useState(null);
@@ -422,12 +476,19 @@ export default function SatpamDashboard() {
     setEvidenceUploading(true);
     try {
       let photoUrl = null;
+
       if (evidencePhoto) {
         const ext = evidencePhoto.name.split(".").pop();
         const fileName = `evidence/${evidenceModal.id}_${Date.now()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("reports").upload(fileName, evidencePhoto);
+        const { error: uploadError } = await supabase.storage
+          .from("reports")
+          .upload(fileName, evidencePhoto);
+
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("reports").getPublicUrl(fileName);
+
+        const { data: urlData } = supabase.storage
+          .from("reports")
+          .getPublicUrl(fileName);
         photoUrl = urlData.publicUrl;
       }
 
@@ -437,14 +498,38 @@ export default function SatpamDashboard() {
         ...(photoUrl && { evidence_photo_url: photoUrl }),
       };
 
-      const { error: updateError } = await supabase.from("reports").update(updateData).eq("id", evidenceModal.id);
+      const { error: updateError } = await supabase
+        .from("reports")
+        .update(updateData)
+        .eq("id", evidenceModal.id);
+
       if (updateError) throw updateError;
 
+      // ✅ KIRIM WA NOTIFIKASI KE USER
       if (evidenceModal.users?.phone) {
-        supabase.functions.invoke("send-wa-fonnte", {
+        const processedDate = new Date().toLocaleString('id-ID', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
+        const message = `✅ *Laporan Selesai*\n\n` +
+          `Halo ${evidenceModal.users?.full_name || "User"}!\n` +
+          `Laporan Anda telah *selesai ditangani*.\n\n` +
+          `🚗 Plat Nomor: ${evidenceModal.plate_number}\n` +
+          `📍 Zona: ${evidenceModal.zones?.name || 'Zona'}\n` +
+          `📅 Tanggal Lapor: ${new Date(evidenceModal.created_at).toLocaleString('id-ID')}\n` +
+          `✅ Tanggal Selesai: ${processedDate}\n\n` +
+          `Terima kasih telah melaporkan pelanggaran parkir.\n` +
+          `Parkiran Anda kini sudah lebih tertib! 🚗✨`;
+
+        // Kirim WA via Edge Function
+        await supabase.functions.invoke("send-wa-fonnte", {
           body: {
             phone: evidenceModal.users.phone,
-            message: `✅ *Laporan Selesai*\n\nHalo ${evidenceModal.users?.full_name || "User"}!\nLaporan Anda telah **selesai ditangani**.\n\nTerima kasih!`,
+            message: message,
           },
         }).catch((err) => console.error("WA Error:", err));
       }
@@ -603,7 +688,7 @@ export default function SatpamDashboard() {
         )}
       </AnimatePresence>
 
-      {/* 📸 Evidence Upload Modal - FIXED */}
+      {/* 📸 Evidence Upload Modal - DENGAN PILIHAN KAMERA/GALERI */}
       <AnimatePresence>
         {evidenceModal && (
           <EvidenceModal

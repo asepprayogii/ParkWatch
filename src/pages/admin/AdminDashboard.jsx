@@ -1,3 +1,4 @@
+// src/pages/admin/AdminDashboard.jsx
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
@@ -5,7 +6,7 @@ import { useLocation } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Car, AlertTriangle, CheckCircle, Clock, MapPin, Activity, ShieldCheck, Map as MapIcon, Users, Hash, AlertOctagon, TrendingUp } from 'lucide-react'
+import { FileText, AlertTriangle, CheckCircle, Clock, MapPin, Activity, ShieldCheck, Map as MapIcon, Users, Hash, AlertOctagon, TrendingUp } from 'lucide-react'
 import L from 'leaflet'
 import clsx from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -211,7 +212,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             label="Total Laporan" value={stats.total} delay={0.1}
-            icon={<Car size={28} strokeWidth={2.5}/>} 
+            icon={<FileText size={28} strokeWidth={2.5} />} 
             colorClass="bg-[#4B4CED]" 
             gradientClass="bg-[#4B4CED]" 
           />
@@ -243,7 +244,7 @@ export default function AdminDashboard() {
             {/* Map */}
             <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
               <GlassCard className="p-8">
-                <SectionTitle icon={MapIcon}>Zona Parkir Universitas Trunodjoyo Madura</SectionTitle>
+                <SectionTitle icon={MapIcon}>Zona Parkir Universitas Trunojoyo Madura</SectionTitle>
                 <div className="h-[400px] w-full rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] relative z-0">
                   <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} className="h-full w-full">
                     <TileLayer
