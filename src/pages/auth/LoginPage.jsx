@@ -195,7 +195,7 @@ export default function LoginPage() {
             className={mounted ? 'bg-zoom' : ''}
             style={{
               position: 'absolute', inset: 0,
-              backgroundImage: "url('/bg-parking.jpg')",
+              backgroundImage: "url('/bg-parking.webp')",
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
@@ -234,7 +234,7 @@ export default function LoginPage() {
           {/* Logo */}
           <div className={`flex flex-col items-center mb-8 ${mounted ? 'anim-logo' : 'opacity-0'}`}>
             <div className="logo-glow rounded-2xl mb-3 p-1">
-              <img src="/logo.png" alt="ParkWatch" className="w-16 h-16 object-contain" />
+              <img src="/logo.webp" alt="ParkWatch" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-3xl font-bold">
               <span className="text-white">Park</span>
@@ -329,7 +329,7 @@ export default function LoginPage() {
             <div className={mounted ? 'anim-logo' : 'opacity-0'}>
               <div className="flex items-center gap-3 mb-16">
                 <div className="logo-glow rounded-xl p-1">
-                  <img src="/logo.png" alt="ParkWatch" className="w-10 h-10 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">
                   <span className="text-white">Park</span>
@@ -384,7 +384,7 @@ export default function LoginPage() {
               {/* Logo desktop */}
               <div className="flex flex-col items-center mb-5">
                 <div className="logo-glow rounded-2xl p-1 mb-2">
-                  <img src="/logo.png" alt="ParkWatch" className="w-14 h-14 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-14 h-14 object-contain" />
                 </div>
                 <h1 className="text-2xl font-bold">
                   <span className="text-white">Parkir</span>

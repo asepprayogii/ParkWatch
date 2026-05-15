@@ -252,12 +252,15 @@ function ReportCard({ report, onClick, onPhotoClick, currentUser }) {
         <div className="relative aspect-video md:aspect-[4/3] md:max-h-[260px] overflow-hidden">
           <img
             src={report.photo_url}
-            alt="laporan"
+            alt={`Foto kendaraan dengan plat ${report.plate_number}`}
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <button
             onClick={(e) => { e.stopPropagation(); onPhotoClick(report.photo_url); }}
+            aria-label="Perbesar foto"
             className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/90 hover:scale-105 z-10"
           >
             <ZoomIn size={14} strokeWidth={2.5} />

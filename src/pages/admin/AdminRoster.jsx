@@ -133,6 +133,7 @@ function RosterItem({ item, onEdit, onDelete }) {
           <div className="flex flex-col gap-1.5 shrink-0">
             <button 
               onClick={() => onEdit(item)}
+              aria-label={`Edit penugasan ${item.users?.full_name}`}
               className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#353F54] hover:bg-blue-50 dark:hover:bg-blue-900/30 flex items-center justify-center transition group"
               title="Edit"
             >
@@ -140,6 +141,7 @@ function RosterItem({ item, onEdit, onDelete }) {
             </button>
             <button 
               onClick={() => onDelete(item.id)}
+              aria-label={`Hapus penugasan ${item.users?.full_name}`}
               className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#353F54] hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center justify-center transition group"
               title="Hapus"
             >

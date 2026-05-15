@@ -190,7 +190,7 @@ export default function Sidebar({ onCollapse }) {
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
               {/* ✅ LOGO DARI PUBLIC /logo.png */}
-              <img src="/logo.png" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
+              <img src="/logo.webp" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className="font-bold text-sm leading-none tracking-tight"
                   style={{ color: theme === 'dark' ? '#fff' : '#0f172a' }}>

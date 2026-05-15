@@ -231,6 +231,7 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
             <div className="relative p-5 pb-4 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border-b border-slate-200 dark:border-[#353F54] flex-shrink-0">
               <button 
                 onClick={onClose} 
+                aria-label="Tutup modal"
                 className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 dark:bg-[#1a1f2e]/90 backdrop-blur-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition shadow-lg z-10"
               >
                 <X size={18} strokeWidth={2.5} />
@@ -255,10 +256,12 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
                     <img 
                       src={URL.createObjectURL(photo)} 
                       alt="Bukti" 
+                      loading="lazy"
                       className="w-full h-40 md:h-48 object-cover" 
                     />
                     <button 
                       onClick={() => setPhoto(null)} 
+                      aria-label="Hapus foto bukti"
                       className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-white shadow-lg transition"
                     >
                       <X size={16} />

@@ -112,7 +112,7 @@ export default function SatpamSidebar({ onCollapse }) {
         {/* ✅ Logo ParkWatch - HANYA MUNCUL SAAT EXPANDED */}
         {!collapsed && (
           <div className="flex items-center gap-2 overflow-hidden">
-            <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
+            <img src="/logo.webp" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
             <div>
               <p className="font-bold text-slate-800 dark:text-white text-sm leading-none">ParkWatch</p>
               <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mt-0.5">Satpam</p>

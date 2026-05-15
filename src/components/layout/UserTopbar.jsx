@@ -60,7 +60,7 @@ export default function UserTopbar() {
 
         {/* ══ MOBILE: Logo kiri ══ */}
         <div className="flex md:hidden items-center gap-2">
-          <img src="/logo.png" alt="logo" className="w-7 h-7 object-contain" />
+          <img src="/logo.webp" alt="logo" className="w-7 h-7 object-contain" />
           <div>
             <p className="font-bold text-sm leading-none" style={{ color: textMain, letterSpacing: '-0.3px' }}>ParkWatch</p>
             <p className="leading-none mt-0.5" style={{ color: textMuted, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.4px' }}>User</p>

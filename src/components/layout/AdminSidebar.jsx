@@ -130,7 +130,7 @@ export default function AdminSidebar({ onCollapse }) {
         >
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
-              <img src="/logo.png" alt="logo" className="w-7 h-7 object-contain shrink-0" />
+              <img src="/logo.webp" alt="logo" className="w-7 h-7 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className="font-bold text-sm leading-none" style={{ color: textPrimary, letterSpacing: '-0.3px' }}>ParkWatch</p>
                 <p className="leading-none mt-0.5" style={{ color: textMuted, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Admin Panel</p>

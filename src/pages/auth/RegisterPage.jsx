@@ -222,7 +222,7 @@ export default function RegisterPage() {
             className={mounted ? 'bg-zoom' : ''}
             style={{
               position: 'absolute', inset: 0,
-              backgroundImage: "url('/bg-parking.jpg')",
+              backgroundImage: "url('/bg-parking.webp')",
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
@@ -261,7 +261,7 @@ export default function RegisterPage() {
           {/* Logo */}
           <div className={`flex flex-col items-center mb-8 ${mounted ? 'anim-logo' : 'opacity-0'}`}>
             <div className="logo-glow rounded-2xl mb-3 p-1">
-              <img src="/logo.png" alt="ParkWatch" className="w-16 h-16 object-contain" />
+              <img src="/logo.webp" alt="ParkWatch" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-3xl font-bold">
               <span className="text-white">Park</span>
@@ -387,7 +387,7 @@ export default function RegisterPage() {
             <div className={mounted ? 'anim-logo' : 'opacity-0'}>
               <div className="flex items-center gap-3 mb-8 lg:mb-16">
                 <div className="logo-glow rounded-xl p-1">
-                  <img src="/logo.png" alt="ParkWatch" className="w-10 h-10 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">
                   <span className="text-white">Park</span>
@@ -444,7 +444,7 @@ export default function RegisterPage() {
               {/* Logo Desktop */}
               <div className="flex flex-col items-center mb-4 lg:mb-5">
                 <div className="logo-glow rounded-2xl p-1 mb-2">
-                  <img src="/logo.png" alt="ParkWatch" className="w-12 h-12 lg:w-14 lg:h-14 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-12 h-12 lg:w-14 lg:h-14 object-contain" />
                 </div>
                 <h1 className="text-xl lg:text-2xl font-bold">
                   <span className="text-white">Park</span>

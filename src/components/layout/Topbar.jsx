@@ -65,7 +65,7 @@ export default function Topbar({ title }) {
         
         {/* ✅ Logo + Label User */}
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
+          <img src="/logo.webp" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
           <div>
             <p className="font-bold text-sm leading-none" style={{ color: theme === 'dark' ? '#fff' : '#0f172a', letterSpacing: '-0.3px' }}>
               ParkWatch
