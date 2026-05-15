@@ -21,25 +21,22 @@ const shiftConfig = {
     label: 'Pagi',
     time: '06:00 - 14:00',
     color: 'text-amber-600 dark:text-amber-400',
-    bg: 'bg-amber-100/60 dark:bg-amber-500/10',
-    border: 'border-amber-200/60 dark:border-amber-500/20',
-    gradient: 'from-amber-500/10 to-transparent'
+    bg: 'bg-amber-50 dark:bg-amber-400/5',
+    border: 'border-amber-100 dark:border-amber-400/10',
   },
   sore: { 
     label: 'Sore',
     time: '14:00 - 22:00',
     color: 'text-orange-600 dark:text-orange-400',
-    bg: 'bg-orange-100/60 dark:bg-orange-500/10',
-    border: 'border-orange-200/60 dark:border-orange-500/20',
-    gradient: 'from-orange-500/10 to-transparent'
+    bg: 'bg-orange-50 dark:bg-orange-400/5',
+    border: 'border-orange-100 dark:border-orange-400/10',
   },
   malam: { 
     label: 'Malam',
     time: '22:00 - 06:00',
     color: 'text-indigo-600 dark:text-indigo-400',
-    bg: 'bg-indigo-100/60 dark:bg-indigo-500/10',
-    border: 'border-indigo-200/60 dark:border-indigo-500/20',
-    gradient: 'from-indigo-500/10 to-transparent'
+    bg: 'bg-indigo-50 dark:bg-indigo-400/5',
+    border: 'border-indigo-100 dark:border-indigo-400/10',
   },
 }
 
@@ -82,7 +79,7 @@ function RosterItem({ item, onEdit, onDelete }) {
   return (
     <GlassCard className={cn(
       "transition-all duration-300",
-      isActive ? "ring-2 ring-green-500/50 shadow-lg shadow-green-500/10" : "opacity-75 hover:opacity-100"
+      isActive ? "border-green-500/30 bg-green-50/30 dark:bg-green-500/5" : "opacity-80 hover:opacity-100"
     )}>
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
@@ -90,10 +87,10 @@ function RosterItem({ item, onEdit, onDelete }) {
           <div className="flex items-start gap-3 flex-1">
             {/* Avatar */}
             <div className={cn(
-              "w-12 h-12 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 shadow-lg transition-all",
+              "w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 transition-all",
               isActive 
-                ? "bg-gradient-to-br from-green-500 to-emerald-500 text-white scale-110" 
-                : "bg-slate-200 dark:bg-[#353F54] text-slate-500 dark:text-slate-400"
+                ? "bg-green-500 text-white shadow-lg shadow-green-500/20" 
+                : "bg-slate-100 dark:bg-[#353F54] text-slate-500 dark:text-slate-400"
             )}>
               {item.users?.full_name?.charAt(0).toUpperCase() || 'S'}
             </div>
@@ -105,14 +102,10 @@ function RosterItem({ item, onEdit, onDelete }) {
                   {item.users?.full_name || 'Satpam'}
                 </p>
                 {isActive && (
-                  <motion.span 
-                    initial={{ scale: 0 }} 
-                    animate={{ scale: 1 }}
-                    className="px-2 py-0.5 bg-green-500 text-white text-[10px] font-black uppercase tracking-wider rounded-full shadow-sm flex items-center gap-1"
-                  >
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                    Sedang Bertugas
-                  </motion.span>
+                  <span className="px-2 py-0.5 bg-green-500/10 text-green-600 dark:text-green-400 text-[9px] font-bold uppercase tracking-wider rounded-md flex items-center gap-1 border border-green-500/20">
+                    <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                    Aktif
+                  </span>
                 )}
               </div>
 
@@ -155,13 +148,9 @@ function RosterItem({ item, onEdit, onDelete }) {
           </div>
         </div>
 
-        {/* Active Indicator Bar */}
+        {/* Active Indicator Bar - Subtler */}
         {isActive && (
-          <motion.div 
-            initial={{ width: 0 }} 
-            animate={{ width: '100%' }}
-            className="h-1 bg-gradient-to-r from-green-500 to-emerald-500 mt-3 rounded-full"
-          />
+          <div className="absolute top-0 left-0 w-1 h-full bg-green-500" />
         )}
       </div>
     </GlassCard>
@@ -296,14 +285,14 @@ function RosterModal({ isOpen, onClose, rosterData, satpamList, zones, onSave, l
                         type="button"
                         onClick={() => setForm({ ...form, shift })}
                         className={cn(
-                          "py-3 rounded-xl border-2 text-xs font-bold uppercase tracking-wider transition-all flex flex-col items-center gap-1",
+                          "py-3 rounded-xl border-2 text-[10px] font-bold uppercase tracking-widest transition-all flex flex-col items-center gap-1",
                           form.shift === shift
-                            ? cn("border-[#37B6E9]", cfg.bg, cfg.color)
-                            : "border-slate-200 dark:border-[#353F54] text-slate-400 hover:border-slate-300 dark:hover:border-[#44506B]"
+                            ? "border-blue-500 bg-blue-500/5 text-blue-600 dark:text-blue-400"
+                            : "border-slate-100 dark:border-[#353F54] text-slate-400 hover:border-slate-200 dark:hover:border-[#44506B]"
                         )}
                       >
-                        <span className="font-semibold">{shift}</span>
-                        <span className="text-[9px] opacity-70">{cfg.time}</span>
+                        <span>{shift}</span>
+                        <span className="text-[8px] opacity-60 font-medium">{cfg.time}</span>
                       </button>
                     )
                   })}
@@ -492,44 +481,55 @@ export default function AdminRoster() {
         
         {/* Header dengan Current Shift */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
+          <div className="space-y-1">
+            <h2 className="text-2xl font-black text-slate-800 dark:text-white flex items-center gap-3">
+              <Calendar className="text-blue-500" size={24} />
               Penugasan Satpam
             </h2>
-            <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">
-              Kelola jadwal tugas berdasarkan shift
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Kelola dan atur jadwal penugasan harian satpam
             </p>
           </div>
           
-          {/* Current Shift Badge */}
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/10 to-emerald-500/10 dark:from-green-500/20 dark:to-emerald-500/20 border border-green-200 dark:border-green-800 rounded-xl"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-            </span>
-            <span className="text-sm font-bold text-green-700 dark:text-green-300">
-              Shift {shiftConfig[currentShift].label}
-            </span>
-            <span className="text-xs text-green-600 dark:text-green-400">
-              ({shiftConfig[currentShift].time})
-            </span>
-          </motion.div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* Current Shift Badge */}
+            <div className="flex items-center gap-3 px-3 py-1.5 bg-slate-100/50 dark:bg-[#242C3B] border border-slate-200/50 dark:border-[#353F54] rounded-xl">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-bold text-slate-600 dark:text-slate-300">
+                  {shiftConfig[currentShift].label}
+                </span>
+              </div>
+              <div className="w-px h-3 bg-slate-300 dark:bg-slate-600" />
+              <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                {shiftConfig[currentShift].time}
+              </span>
+            </div>
+
+            {/* Add Button - Moved here and made compact */}
+            <button
+              onClick={() => { setEditingRoster(null); setModalOpen(true) }}
+              className="px-4 py-2 bg-[#37B6E9] hover:bg-[#2a9cc9] text-white text-sm font-bold rounded-xl transition shadow-lg shadow-[#37B6E9]/25 flex items-center gap-2"
+            >
+              <Plus size={16} />
+              <span>Tambah</span>
+            </button>
+          </div>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-4">
           {[
-            { label: 'Total', value: roster.length, color: 'text-slate-700 dark:text-slate-200', bg: 'bg-slate-100/60 dark:bg-[#222834]' },
-            { label: 'Sedang Aktif', value: activeCount, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-100/60 dark:bg-green-500/10' },
-            { label: 'Zona', value: sortedZones.length, color: 'text-[#37B6E9]', bg: 'bg-[#37B6E9]/10 dark:bg-[#37B6E9]/20' },
+            { label: 'Total Penugasan', value: roster.length, icon: User, color: 'text-blue-500' },
+            { label: 'Satpam Aktif', value: activeCount, icon: ShieldCheck, color: 'text-green-500' },
+            { label: 'Total Zona', value: sortedZones.length, icon: MapPin, color: 'text-purple-500' },
           ].map((s) => (
-            <GlassCard key={s.label} className={cn("p-4 text-center", s.bg)}>
-              <p className={cn("text-2xl font-black", s.color)}>{s.value}</p>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">{s.label}</p>
+            <GlassCard key={s.label} className="p-4 flex flex-col items-center justify-center">
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-2 bg-slate-50 dark:bg-slate-800", s.color.replace('text', 'bg').replace('500', '500/10'))}>
+                <s.icon size={16} className={s.color} />
+              </div>
+              <p className="text-xl font-black text-slate-800 dark:text-white">{s.value}</p>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{s.label}</p>
             </GlassCard>
           ))}
         </div>
@@ -583,14 +583,7 @@ export default function AdminRoster() {
           </div>
         )}
 
-        {/* Add Button */}
-        <button
-          onClick={() => { setEditingRoster(null); setModalOpen(true) }}
-          className="w-full py-3 bg-[#37B6E9] hover:bg-[#2a9cc9] text-white font-bold rounded-xl transition shadow-lg shadow-[#37B6E9]/25 flex items-center justify-center gap-2"
-        >
-          <Plus size={18} />
-          Tambah Penugasan Baru
-        </button>
+
 
         {/* List by Zone */}
         {loading ? (
