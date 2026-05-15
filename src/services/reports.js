@@ -204,7 +204,7 @@ export async function getReportInfo(reportId) {
       id: data.id,
       plateNumber: data.plate_number,
       zoneName: data.zones?.name || 'Zona Tidak Diketahui',
-      userName: data.users?.full_name || 'User',
+      userName: data.users?.full_name || 'Pelapor',
       userPhone: data.users?.phone,
       description: data.description,
       status: data.status,
@@ -261,7 +261,7 @@ export async function createReportWithNotification({ user_id, plate_number, zone
         .eq('id', user_id)
         .single()
 
-      const userName = userData?.full_name || 'User'
+      const userName = userData?.full_name || 'Pelapor'
       const reportDate = formatDateIndo(report.created_at)
 
       const message = `🚨 *Laporan Baru ParkWatch*\n\n` +

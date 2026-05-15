@@ -198,7 +198,7 @@ export default function Sidebar({ onCollapse }) {
                 </p>
                 <p className="text-xs leading-none mt-0.5"
                   style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', letterSpacing: '0.4px', textTransform: 'uppercase', fontSize: '9px' }}>
-                  User
+                  Pelapor
                 </p>
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function Sidebar({ onCollapse }) {
           {!collapsed && (
             <div className="overflow-hidden">
               <p className="text-xs font-bold truncate" style={{ color: theme === 'dark' ? '#fff' : '#0f172a' }}>
-                {user?.full_name ?? 'User'}
+                {user?.full_name ?? 'Pelapor'}
               </p>
               <p className="text-xs truncate"
                 style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.45)' : 'rgba(100,116,139,0.7)', fontSize: '10px' }}>

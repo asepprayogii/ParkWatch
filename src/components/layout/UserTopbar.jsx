@@ -63,7 +63,7 @@ export default function UserTopbar() {
           <img src="/logo.webp" alt="logo" className="w-7 h-7 object-contain" />
           <div>
             <p className="font-bold text-sm leading-none" style={{ color: textMain, letterSpacing: '-0.3px' }}>ParkWatch</p>
-            <p className="leading-none mt-0.5" style={{ color: textMuted, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.4px' }}>User</p>
+            <p className="leading-none mt-0.5" style={{ color: textMuted, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.4px' }}>Pelapor</p>
           </div>
         </div>
 
@@ -112,8 +112,8 @@ export default function UserTopbar() {
           {/* ══ DESKTOP: Avatar + nama + role ══ */}
           <div className="hidden md:flex items-center gap-3 pl-2" style={{ borderLeft: `1px solid ${border}` }}>
             <div className="text-right leading-none">
-              <p className="text-xs font-bold" style={{ color: textMain }}>{user?.full_name ?? 'User'}</p>
-              <p className="text-[10px] mt-0.5 font-medium capitalize" style={{ color: textMuted }}>{user?.role ?? 'user'}</p>
+              <p className="text-xs font-bold" style={{ color: textMain }}>{user?.full_name ?? 'Pelapor'}</p>
+              <p className="text-[10px] mt-0.5 font-medium uppercase tracking-wider" style={{ color: textMuted }}>Pelapor</p>
             </div>
 
             {/* Avatar */}

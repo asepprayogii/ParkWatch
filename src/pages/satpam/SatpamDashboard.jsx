@@ -515,7 +515,7 @@ export default function SatpamDashboard() {
         });
 
         const message = `✅ *Laporan Selesai*\n\n` +
-          `Halo ${evidenceModal.users?.full_name || "User"}!\n` +
+          `Halo ${evidenceModal.users?.full_name || "Pelapor"}!\n` +
           `Laporan Anda telah *selesai ditangani*.\n\n` +
           `🚗 Plat Nomor: ${evidenceModal.plate_number}\n` +
           `📍 Zona: ${evidenceModal.zones?.name || 'Zona'}\n` +

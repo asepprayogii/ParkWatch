@@ -71,7 +71,7 @@ export default function Topbar({ title }) {
               ParkWatch
             </p>
             <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              User
+              Pelapor
             </p>
           </div>
         </div>
