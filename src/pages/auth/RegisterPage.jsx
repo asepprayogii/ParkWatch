@@ -212,7 +212,7 @@ export default function RegisterPage() {
 
       {/* ── CONTAINER UTAMA: h-screen + overflow-hidden ── */}
       <div 
-        className="min-h-screen md:h-screen flex relative overflow-hidden" 
+        className="h-[100dvh] w-full fixed inset-0 flex relative overflow-hidden" 
         style={{ fontFamily: "'Inter', sans-serif" }}
       >
 
@@ -256,7 +256,7 @@ export default function RegisterPage() {
         </div>
 
         {/* ── MOBILE LAYOUT (boleh scroll) ── */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-6 py-10 md:hidden overflow-y-auto">
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-6 py-6 md:hidden overflow-y-auto scrollbar-hide">
 
           {/* Logo */}
           <div className={`flex flex-col items-center mb-8 ${mounted ? 'anim-logo' : 'opacity-0'}`}>
