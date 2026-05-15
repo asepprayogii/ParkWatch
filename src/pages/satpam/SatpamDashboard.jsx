@@ -1,5 +1,5 @@
 // src/pages/satpam/SatpamDashboard.jsx
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react"; // ✅ Tambah useRef
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../store/AuthContext";
@@ -62,7 +62,7 @@ const statusConfig = {
   },
 };
 
-// ── GLASS CARD (Sama seperti UserFeed)
+// ── GLASS CARD
 function GlassCard({ children, className, hover = true, onClick }) {
   return (
     <motion.div
@@ -82,7 +82,7 @@ function GlassCard({ children, className, hover = true, onClick }) {
   );
 }
 
-// ── REPORT DETAIL MODAL (Konsep persis UserFeed)
+// ── REPORT DETAIL MODAL
 function ReportDetailModal({ report, onClose }) {
   if (!report) return null;
   const status = statusConfig[report.status] ?? statusConfig.pending;
@@ -180,23 +180,22 @@ function ReportDetailModal({ report, onClose }) {
   );
 }
 
-// ── EVIDENCE MODAL - DENGAN PILIHAN KAMERA/GALERI ──
+// ── EVIDENCE MODAL - FIXED WITH PROPER useRef ──
 function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, note, setNote }) {
-  const fileRef = useState(null)[0];
+  // ✅ FIX: Gunakan useRef untuk akses DOM element file input
+  const fileInputRef = useRef(null);
 
   const handleCameraClick = () => {
-    if (fileRef) {
-      const input = fileRef;
-      input.setAttribute("capture", "environment");
-      input.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.setAttribute("capture", "environment");
+      fileInputRef.current.click();
     }
   };
 
   const handleGalleryClick = () => {
-    if (fileRef) {
-      const input = fileRef;
-      input.removeAttribute("capture");
-      input.click();
+    if (fileInputRef.current) {
+      fileInputRef.current.removeAttribute("capture");
+      fileInputRef.current.click();
     }
   };
 
@@ -204,6 +203,8 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
     const file = e.target.files?.[0];
     if (file) {
       setPhoto(file);
+      // Reset input value agar bisa pilih file yang sama lagi
+      e.target.value = "";
     }
   };
 
@@ -297,14 +298,9 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
                   </div>
                 )}
 
-                {/* Hidden file input */}
+                {/* ✅ Hidden file input dengan ref yang benar */}
                 <input
-                  ref={(el) => {
-                    if (el && !fileRef) {
-                      // Simpan reference pertama kali
-                      window.evidenceFileInput = el;
-                    }
-                  }}
+                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
@@ -688,7 +684,7 @@ export default function SatpamDashboard() {
         )}
       </AnimatePresence>
 
-      {/* 📸 Evidence Upload Modal - DENGAN PILIHAN KAMERA/GALERI */}
+      {/* 📸 Evidence Upload Modal - FIXED */}
       <AnimatePresence>
         {evidenceModal && (
           <EvidenceModal
