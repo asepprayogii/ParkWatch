@@ -75,7 +75,7 @@ export default function UserNotifications() {
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   return (
-    <UserLayout title="Notifikasi">
+    <UserLayout>
       <div className="py-3 space-y-4">
         {unreadCount > 0 && (
           <motion.div 

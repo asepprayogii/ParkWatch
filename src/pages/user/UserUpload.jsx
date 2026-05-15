@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/AuthContext";
 import { createReportWithNotification, uploadPhoto, getZones } from "../../services/reports";
 import { detectPlateWithAPI, validateIndonesianPlate } from "../../services/plateDetection";
+import { compressImage } from "../../utils/compressImage";
 import UserLayout from "../../components/layout/UserLayout";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
@@ -50,11 +51,15 @@ export default function UserUpload() {
     };
   }, [photoPreview]);
 
-  const handlePhoto = async (file) => {
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Ukuran foto maksimal 5MB");
-      return;
+  const handlePhoto = async (rawFile) => {
+    if (!rawFile) return;
+
+    // Kompres otomatis jika > 1.5MB (target max 1.5MB output)
+    let file = rawFile;
+    try {
+      file = await compressImage(rawFile, { maxSizeMB: 1.5, quality: 0.8 });
+    } catch (err) {
+      console.warn('Kompresi gagal, pakai file asli:', err);
     }
 
     setPhoto(file);
@@ -181,7 +186,7 @@ export default function UserUpload() {
   };
 
   return (
-    <UserLayout title="Laporkan Parkir Liar">
+    <UserLayout>
       <form onSubmit={handleSubmit} className="py-3 space-y-5">
         
         {/* Error Banner */}
@@ -223,7 +228,7 @@ export default function UserUpload() {
                 className="relative rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-[#353F54] shadow-lg bg-slate-50 dark:bg-[#222834]"
               >
                 {/* Preview Image - Fixed aspect ratio, no squash */}
-                <div className="w-full aspect-video flex items-center justify-center p-2">
+                <div className="w-full aspect-video md:aspect-[4/3] md:max-h-[340px] flex items-center justify-center p-2">
                   <img 
                     src={photoPreview} 
                     alt="Preview kendaraan" 

@@ -160,7 +160,7 @@ export default function SatpamReportDetail() {
 
   if (loading) {
     return (
-      <SatpamLayout title="Detail Laporan">
+      <SatpamLayout>
         <div className="space-y-4 py-4">
           {[1, 2, 3].map((i) => (
             <GlassCard key={i} className="h-28 animate-pulse" />
@@ -172,7 +172,7 @@ export default function SatpamReportDetail() {
 
   if (error || !report) {
     return (
-      <SatpamLayout title="Detail Laporan">
+      <SatpamLayout>
         <GlassCard className="p-8 flex flex-col items-center justify-center text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500 mb-3" />
           <p className="text-slate-600 dark:text-slate-300 font-medium mb-2">{error || "Laporan tidak ditemukan"}</p>
@@ -225,8 +225,8 @@ export default function SatpamReportDetail() {
   ];
 
   return (
-    <SatpamLayout title="Detail Laporan">
-      <div className="w-full min-w-0 space-y-6 pb-10 px-2 md:px-4 lg:px-6">
+    <SatpamLayout>
+      <div className="w-full min-w-0 space-y-6 pb-10">
         
         {/* Back Button */}
         <motion.button
@@ -273,7 +273,7 @@ export default function SatpamReportDetail() {
                     <Camera size={14} /> Foto Laporan
                   </p>
                   <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                    <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
+                    <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video md:aspect-[4/3] md:max-h-[380px] object-cover" />
                     <button
                       onClick={() => setZoomPhoto("original")}
                       className="absolute bottom-3 right-3 bg-black/70 backdrop-blur-md text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/90 hover:scale-105"
@@ -371,7 +371,7 @@ export default function SatpamReportDetail() {
                         <img 
                           src={report.evidence_photo_url} 
                           alt="Bukti penanganan" 
-                          className="w-full aspect-video object-cover" 
+                          className="w-full aspect-video md:aspect-[4/3] md:max-h-[380px] object-cover" 
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <button

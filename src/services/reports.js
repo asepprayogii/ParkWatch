@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { sendNotificationToSatpam } from './notifications'
 
 // Ambil semua laporan + info user + zona
 export async function getReports({ zoneId = null } = {}) {
@@ -244,6 +245,13 @@ export async function createReportWithNotification({ user_id, plate_number, zone
 
     const satpamInfo = await getActiveSatpamPhone(zone_id, currentShift)
     console.log('👮 [DEBUG] Data satpam ditemukan:', satpamInfo)
+
+    // ✅ Kirim notifikasi in-app ke satpam yang bertugas di zona ini
+    sendNotificationToSatpam({
+      zoneId: zone_id,
+      reportId: report.id,
+      plateNumber: plate_number,
+    }).catch(err => console.error('Failed to send in-app notif to satpam:', err))
 
     if (satpamInfo?.phone) {
       // Ambil info user yang lapor

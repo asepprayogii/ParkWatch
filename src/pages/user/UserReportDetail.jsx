@@ -150,7 +150,7 @@ export default function UserReportDetail() {
 
   if (loading) {
     return (
-      <UserLayout title="Detail Laporan">
+      <UserLayout>
         <div className="flex flex-col gap-3 py-4">
           {[1, 2, 3].map(i => (
             <div key={i} className="h-24 bg-white dark:bg-[#242C3B] rounded-2xl animate-pulse border border-slate-200 dark:border-[#353F54]" />
@@ -162,7 +162,7 @@ export default function UserReportDetail() {
 
   if (error || !report) {
     return (
-      <UserLayout title="Detail Laporan">
+      <UserLayout>
         <div className="flex flex-col items-center justify-center py-16 bg-white dark:bg-[#242C3B] rounded-2xl border border-red-200 dark:border-red-800">
           <AlertTriangle className="w-12 h-12 text-red-500 mb-3" />
           <p className="text-red-500 font-medium mb-2">{error || 'Laporan tidak ditemukan'}</p>
@@ -216,7 +216,7 @@ export default function UserReportDetail() {
   ]
 
   return (
-    <UserLayout title="Detail Laporan">
+    <UserLayout>
       <div className="space-y-6 pb-10">
         {/* Back Button */}
         <motion.button
@@ -271,7 +271,7 @@ export default function UserReportDetail() {
                   <img 
                     src={report.photo_url} 
                     alt="Bukti laporan" 
-                    className="w-full aspect-video object-cover" 
+                    className="w-full aspect-video md:aspect-[4/3] md:max-h-[380px] object-cover" 
                   />
                   <button
                     onClick={() => setZoomPhoto('original')}
@@ -401,7 +401,7 @@ export default function UserReportDetail() {
                       <img 
                         src={report.evidence_photo_url} 
                         alt="Bukti penanganan" 
-                        className="w-full aspect-video object-cover" 
+                        className="w-full aspect-video md:aspect-[4/3] md:max-h-[380px] object-cover" 
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <button

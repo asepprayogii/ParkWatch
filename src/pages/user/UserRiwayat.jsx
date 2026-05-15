@@ -201,7 +201,7 @@ export default function UserRiwayat() {
   }
 
   return (
-    <UserLayout title="Riwayat Laporan">
+    <UserLayout>
       <div className="py-3 space-y-6">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">

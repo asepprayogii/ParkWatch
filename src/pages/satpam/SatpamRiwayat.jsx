@@ -218,8 +218,8 @@ export default function SatpamRiwayat() {
   }), [reports]);
 
   return (
-    <SatpamLayout title="Riwayat Penanganan">
-      <div className="w-full min-w-0 space-y-6 pb-10 px-2 md:px-4 lg:px-6">
+    <SatpamLayout>
+      <div className="w-full min-w-0 space-y-6 pb-10">
         
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

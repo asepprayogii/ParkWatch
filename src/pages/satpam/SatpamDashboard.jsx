@@ -121,7 +121,7 @@ function ReportDetailModal({ report, onClose }) {
           <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 overscroll-contain">
             {report.photo_url && (
               <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
+                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video md:aspect-[4/3] md:max-h-[340px] object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
@@ -255,7 +255,7 @@ function EvidenceModal({ report, onClose, onSubmit, uploading, photo, setPhoto, 
                     <img 
                       src={URL.createObjectURL(photo)} 
                       alt="Bukti" 
-                      className="w-full h-48 object-cover" 
+                      className="w-full h-40 md:h-48 object-cover" 
                     />
                     <button 
                       onClick={() => setPhoto(null)} 
@@ -541,9 +541,9 @@ export default function SatpamDashboard() {
   };
 
   return (
-    <SatpamLayout title="Dashboard Satpam">
+    <SatpamLayout>
       {/* Container full width, no empty space when sidebar toggles */}
-      <div className="w-full min-w-0 space-y-6 pb-10 px-2 md:px-4 lg:px-6">
+      <div className="w-full min-w-0 space-y-6 pb-10">
         
         {/* 🟢 Info Zona Aktif */}
         <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
@@ -577,7 +577,7 @@ export default function SatpamDashboard() {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[1, 2, 3].map((i) => (
-                <GlassCard key={i} hover={false} className="aspect-video animate-pulse" />
+                <GlassCard key={i} hover={false} className="aspect-video md:aspect-[4/3] md:max-h-[260px] animate-pulse" />
               ))}
             </div>
           ) : !activeZone ? (
@@ -604,7 +604,7 @@ export default function SatpamDashboard() {
                 return (
                   <GlassCard key={report.id} className="flex flex-col h-full">
                     {report.photo_url && (
-                      <div className="relative aspect-video overflow-hidden">
+                      <div className="relative aspect-video md:aspect-[4/3] md:max-h-[260px] overflow-hidden">
                         <img src={report.photo_url} alt="laporan" className="w-full h-full object-cover transition-transform duration-500 hover:scale-105" />
                         <div className={cn("absolute top-3 left-3 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg", status.bg, status.text)}>
                           <StatusIcon size={12} />

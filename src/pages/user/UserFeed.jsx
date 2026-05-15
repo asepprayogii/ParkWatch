@@ -142,7 +142,7 @@ function ReportDetailModal({ report, onClose, currentUser }) {
           <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 overscroll-contain">
             {report.photo_url && (
               <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video object-cover" />
+                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video md:aspect-[4/3] md:max-h-[340px] object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             )}
@@ -249,7 +249,7 @@ function ReportCard({ report, onClick, onPhotoClick, currentUser }) {
   return (
     <GlassCard hover={true} className="cursor-pointer group" onClick={() => onClick(report)}>
       {report.photo_url && (
-        <div className="relative aspect-video overflow-hidden">
+        <div className="relative aspect-video md:aspect-[4/3] md:max-h-[260px] overflow-hidden">
           <img
             src={report.photo_url}
             alt="laporan"
@@ -395,7 +395,7 @@ export default function UserFeed() {
   const appDesc = localStorage.getItem("pw_app_description") || "Laporkan parkir liar di lingkungan kita";
 
   return (
-    <UserLayout title="Laporan Parkir">
+    <UserLayout>
       <div className="w-full min-w-0 space-y-8 pb-10">
 
         {/* Header */}
@@ -477,7 +477,7 @@ export default function UserFeed() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <GlassCard key={i} hover={false} className="aspect-video animate-pulse" />
+              <GlassCard key={i} hover={false} className="aspect-video md:aspect-[4/3] md:max-h-[260px] animate-pulse" />
             ))}
           </div>
         ) : filteredReports.length === 0 ? (

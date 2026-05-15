@@ -151,7 +151,7 @@ export default function UserProfile() {
   const resolvedCount = pointsData?.resolvedReports || 0
 
   return (
-    <UserLayout title="Profil Saya">
+    <UserLayout>
       <div className="py-4 space-y-8">
         
         {/* Header Profile */}

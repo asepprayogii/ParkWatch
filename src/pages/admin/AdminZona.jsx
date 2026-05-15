@@ -156,14 +156,14 @@ export default function AdminZona() {
   }
 
   return (
-    <AdminLayout title="Kelola Zona">
+    <AdminLayout>
       <PageTransition>
         {/* Header Section */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold text-slate-800 dark:text-white tracking-tight transition-colors">Daftar Zona Parkir</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 transition-colors">
-              {zones.length} zona terdaftar dalam sistem
+            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Kelola Zona</h2>
+            <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">
+              {zones.length} zona parkir terdaftar dalam sistem
             </p>
           </div>
           <button

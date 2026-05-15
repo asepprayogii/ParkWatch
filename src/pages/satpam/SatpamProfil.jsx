@@ -195,7 +195,7 @@ export default function SatpamProfil() {
   const CurrentIcon = currentLevel.icon
 
   return (
-    <SatpamLayout title="Profil Satpam">
+    <SatpamLayout>
       <div className="py-4 space-y-8">
         
         {/* Header Profile - Identical to Admin Profile Style if any */}

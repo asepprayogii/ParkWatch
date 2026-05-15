@@ -487,16 +487,16 @@ export default function AdminRoster() {
   }
 
   return (
-    <AdminLayout title="Penugasan Satpam">
+    <AdminLayout>
       <div className="space-y-6 pb-10">
         
         {/* Header dengan Current Shift */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
+            <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
               Penugasan Satpam
-            </h1>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            </h2>
+            <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">
               Kelola jadwal tugas berdasarkan shift
             </p>
           </div>

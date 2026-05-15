@@ -152,8 +152,14 @@ export default function AdminSatpam() {
   }
 
   return (
-    <AdminLayout title="Kelola Satpam">
+    <AdminLayout>
       <PageTransition>
+        {/* Page Title */}
+        <div className="mb-6">
+          <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Kelola Satpam</h2>
+          <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">Manajemen akun petugas keamanan parkir</p>
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-slate-500 dark:text-slate-400 transition-colors">{satpamList.length} satpam terdaftar</p>
