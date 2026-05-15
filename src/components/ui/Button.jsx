@@ -5,6 +5,7 @@ export default function Button({
   fullWidth = false,
   disabled = false,
   onClick,
+  className = '',
 }) {
   const base = 'inline-flex items-center justify-center gap-2 font-semibold py-3 px-5 rounded-xl transition active:scale-95 text-sm'
 
@@ -21,7 +22,7 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`${base} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      className={`${base} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''} ${className}`}
     >
       {children}
     </button>

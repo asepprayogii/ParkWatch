@@ -4,6 +4,7 @@ import { useAuth } from "./store/AuthContext";
 import ProtectedRoute from "./components/layout/ProtectedRoute";
 
 // Lazy Load Pages
+const LandingPage = lazy(() => import("./pages/public/LandingPage"));
 const LoginPage = lazy(() => import("./pages/auth/LoginPage"));
 const RegisterPage = lazy(() => import("./pages/auth/RegisterPage"));
 
@@ -129,8 +130,8 @@ function App() {
         />
 
         {/* Default */}
-        <Route path="/" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
-        <Route path="*" element={user ? <RedirectByRole user={user} /> : <Navigate to="/login" replace />} />
+        <Route path="/" element={user ? <RedirectByRole user={user} /> : <LandingPage />} />
+        <Route path="*" element={user ? <RedirectByRole user={user} /> : <Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
