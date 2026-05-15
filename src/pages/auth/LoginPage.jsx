@@ -30,29 +30,30 @@ const features = [
   {
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.069A1 1 0 0121 8.82V15.18a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
       </svg>
     ),
-    title: 'Deteksi Plat',
-    desc: 'AI baca plat otomatis'
+    title: 'Foto & Laporkan',
+    desc: 'Cukup foto, plat terdeteksi AI'
   },
   {
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
       </svg>
     ),
-    title: 'Manajemen Parkir',
-    desc: 'Kelola zona dan petugas'
+    title: 'Pantau Progres',
+    desc: 'Lacak status laporan Anda'
   },
   {
     icon: (
       <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
       </svg>
     ),
-    title: 'Laporan & Statistik',
-    desc: 'Pantau data real-time'
+    title: 'Lingkungan Tertib',
+    desc: 'Bersama ciptakan area aman'
   },
 ]
 
@@ -186,7 +187,7 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div className="min-h-screen flex relative overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className="h-[100dvh] w-full fixed inset-0 flex relative overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
 
         {/* Background dengan animasi zoom */}
         <div className="absolute inset-0 overflow-hidden">
@@ -194,7 +195,7 @@ export default function LoginPage() {
             className={mounted ? 'bg-zoom' : ''}
             style={{
               position: 'absolute', inset: 0,
-              backgroundImage: "url('/bg-parking.jpg')",
+              backgroundImage: "url('/bg-parking.webp')",
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               backgroundRepeat: 'no-repeat',
@@ -228,18 +229,18 @@ export default function LoginPage() {
         </div>
 
         {/* ── MOBILE LAYOUT ── */}
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-6 py-10 md:hidden">
+        <div className="relative z-10 flex flex-col items-center justify-center w-full h-full px-6 py-6 md:hidden overflow-y-auto scrollbar-hide">
 
           {/* Logo */}
           <div className={`flex flex-col items-center mb-8 ${mounted ? 'anim-logo' : 'opacity-0'}`}>
             <div className="logo-glow rounded-2xl mb-3 p-1">
-              <img src="/logo.png" alt="ParkWatch" className="w-16 h-16 object-contain" />
+              <img src="/logo.webp" alt="ParkWatch" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-3xl font-bold">
               <span className="text-white">Park</span>
               <span className="text-blue-400">Watch</span>
             </h1>
-            <p className="text-slate-300 text-sm mt-1">Pantau. Amankan. Kendaraan Anda.</p>
+            <p className="text-slate-300 text-sm mt-1">Laporkan parkir liar di sekitarmu</p>
           </div>
 
           {/* Card */}
@@ -282,7 +283,8 @@ export default function LoginPage() {
                   className="input-focus w-full pl-10 pr-12 py-3 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none transition"
                   style={inputStyle} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition">
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center text-slate-400 hover:text-slate-200 transition">
                   <EyeIcon open={showPassword} />
                 </button>
               </div>
@@ -328,7 +330,7 @@ export default function LoginPage() {
             <div className={mounted ? 'anim-logo' : 'opacity-0'}>
               <div className="flex items-center gap-3 mb-16">
                 <div className="logo-glow rounded-xl p-1">
-                  <img src="/logo.png" alt="ParkWatch" className="w-10 h-10 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-10 h-10 object-contain" />
                 </div>
                 <span className="text-2xl font-bold">
                   <span className="text-white">Park</span>
@@ -337,13 +339,13 @@ export default function LoginPage() {
               </div>
               <div className="anim-left-title">
                 <h2 className="text-5xl font-bold text-white mb-4 leading-tight">
-                  Sistem Monitoring<br />
+                  Laporkan Parkir Liar<br />
                   <span style={{ background: 'linear-gradient(90deg, #60a5fa, #34d399)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    Parkir Cerdas
+                    di Lingkungan Anda
                   </span>
                 </h2>
                 <p className="text-slate-300 text-lg leading-relaxed">
-                  Pantau, kelola, dan amankan area parkir<br />Anda secara real-time dengan AI.
+                  Foto, laporkan, dan pantau penanganannya<br />secara real-time. Bersama wujudkan lingkungan tertib.
                 </p>
               </div>
             </div>
@@ -383,19 +385,19 @@ export default function LoginPage() {
               {/* Logo desktop */}
               <div className="flex flex-col items-center mb-5">
                 <div className="logo-glow rounded-2xl p-1 mb-2">
-                  <img src="/logo.png" alt="ParkWatch" className="w-14 h-14 object-contain" />
+                  <img src="/logo.webp" alt="ParkWatch" className="w-14 h-14 object-contain" />
                 </div>
                 <h1 className="text-2xl font-bold">
                   <span className="text-white">Parkir</span>
                   <span className="text-blue-400">Watch</span>
                 </h1>
-                <p className="text-slate-400 text-xs mt-1">Sistem Monitoring Parkir</p>
+                <p className="text-slate-400 text-xs mt-1">Pelaporan Parkir Liar</p>
               </div>
 
               <div className="border-t mb-5" style={{ borderColor: 'rgba(255,255,255,0.08)' }} />
 
-              <h2 className="text-xl font-bold text-white mb-1">Selamat Datang</h2>
-              <p className="text-slate-400 text-sm mb-5">Silakan masuk ke akun Anda</p>
+              <h2 className="text-xl font-bold text-white mb-1">Masuk ke Akun</h2>
+              <p className="text-slate-400 text-sm mb-5">Pantau laporan dan bantu jaga lingkungan</p>
 
               {error && (
                 <div className="mb-4 px-4 py-3 rounded-xl text-sm text-red-400 flex items-center gap-2"

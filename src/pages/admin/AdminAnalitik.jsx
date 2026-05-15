@@ -91,7 +91,12 @@ export default function AdminAnalitik() {
     : 0
 
   return (
-    <AdminLayout title="Analitik & Statistik">
+    <AdminLayout>
+      <div className="mb-6">
+        <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Analitik & Statistik</h2>
+        <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">Analisis data laporan pelanggaran parkir</p>
+      </div>
+
       {/* Period filter */}
       <div className="flex gap-2 mb-6">
         {[

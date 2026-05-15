@@ -1,11 +1,7 @@
-import Tesseract from 'tesseract.js'
-
-/**
- * IMPROVED OCR ENGINE UNTUK PLAT NOMOR INDONESIA
- * Return: String formatted "BK 7272 JT" (dengan spasi)
- */
-
-// ==================== PREPROCESSING CANGGIH ====================
+// ❌ DIHAPUS: import Tesseract from 'tesseract.js'
+// ✅ Diganti dynamic import di dalam runOCRAdvanced()
+// Alasan: static import membuat Vite bundle tesseract.js (~50MB) saat build
+// dan menyebabkan Vercel timeout. Dynamic import hanya load saat user upload foto.
 
 async function detectAndCropPlateArea(file) {
   return new Promise((resolve) => {
@@ -29,7 +25,6 @@ async function detectAndCropPlateArea(file) {
 
       let minY = canvas.height, maxY = 0
       let minX = canvas.width, maxX = 0
-      const threshold = 50
 
       for (let y = 0; y < canvas.height; y++) {
         for (let x = 0; x < canvas.width; x++) {
@@ -65,80 +60,6 @@ async function detectAndCropPlateArea(file) {
       cropCtx.drawImage(canvas, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight)
 
       cropped.toBlob(resolve, 'image/png')
-    }
-    img.src = url
-  })
-}
-
-async function preprocessImageAdvanced(file) {
-  return new Promise((resolve) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      const scale = Math.max(2, Math.ceil(600 / img.width))
-      canvas.width = img.width * scale
-      canvas.height = img.height * scale
-
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
-
-      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-      let data = imageData.data
-      
-      const grayArray = []
-      for (let i = 0; i < data.length; i += 4) {
-        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
-        grayArray.push(gray)
-        data[i] = data[i + 1] = data[i + 2] = gray
-      }
-
-      const claheData = applyCLAHE(grayArray, canvas.width, canvas.height)
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = data[i + 1] = data[i + 2] = claheData[i / 4]
-      }
-
-      let processed = morphClose(claheData, canvas.width, canvas.height, 2)
-      const threshold = computeOtsuThreshold(processed)
-      
-      for (let i = 0; i < processed.length; i++) {
-        processed[i] = processed[i] > threshold ? 255 : 0
-      }
-
-      let whiteCount = 0
-      for (let i = 0; i < processed.length; i++) {
-        if (processed[i] > 128) whiteCount++
-      }
-
-      if (whiteCount < processed.length * 0.3) {
-        for (let i = 0; i < processed.length; i++) {
-          processed[i] = 255 - processed[i]
-        }
-      }
-
-      processed = morphDilate(processed, canvas.width, canvas.height, 1)
-
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = data[i + 1] = data[i + 2] = processed[i / 4]
-        data[i + 3] = 255
-      }
-
-      ctx.putImageData(imageData, 0, 0)
-
-      const padded = document.createElement('canvas')
-      const pad = 15
-      padded.width = canvas.width + pad * 2
-      padded.height = canvas.height + pad * 2
-      const pctx = padded.getContext('2d')
-      pctx.fillStyle = 'white'
-      pctx.fillRect(0, 0, padded.width, padded.height)
-      pctx.drawImage(canvas, pad, pad)
-
-      padded.toBlob((blob) => {
-        URL.revokeObjectURL(url)
-        resolve(blob)
-      }, 'image/png')
     }
     img.src = url
   })
@@ -234,29 +155,16 @@ function computeOtsuThreshold(data) {
   return threshold
 }
 
-function morphClose(data, width, height, iterations = 1) {
-  let result = new Uint8ClampedArray(data)
-  for (let iter = 0; iter < iterations; iter++) {
-    result = morphErode(result, width, height)
-    result = morphDilate(result, width, height)
-  }
-  return result
-}
-
 function morphErode(data, width, height) {
   const result = new Uint8ClampedArray(data)
   const kernel = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
-
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
       const idx = y * width + x
       if (data[idx] > 128) {
         let allWhite = true
         for (const [dy, dx] of kernel) {
-          if (data[(y + dy) * width + (x + dx)] <= 128) {
-            allWhite = false
-            break
-          }
+          if (data[(y + dy) * width + (x + dx)] <= 128) { allWhite = false; break }
         }
         if (!allWhite) result[idx] = 0
       }
@@ -270,16 +178,12 @@ function morphDilate(data, width, height, iterations = 1) {
   for (let iter = 0; iter < iterations; iter++) {
     const temp = new Uint8ClampedArray(result)
     const kernel = [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
-
     for (let y = 1; y < height - 1; y++) {
       for (let x = 1; x < width - 1; x++) {
         const idx = y * width + x
         if (result[idx] <= 128) {
           for (const [dy, dx] of kernel) {
-            if (result[(y + dy) * width + (x + dx)] > 128) {
-              temp[idx] = 255
-              break
-            }
+            if (result[(y + dy) * width + (x + dx)] > 128) { temp[idx] = 255; break }
           }
         }
       }
@@ -289,6 +193,89 @@ function morphDilate(data, width, height, iterations = 1) {
   return result
 }
 
+function morphClose(data, width, height, iterations = 1) {
+  let result = new Uint8ClampedArray(data)
+  for (let iter = 0; iter < iterations; iter++) {
+    result = morphErode(result, width, height)
+    result = morphDilate(result, width, height)
+  }
+  return result
+}
+
+async function preprocessImageAdvanced(file) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      const scale = Math.max(2, Math.ceil(600 / img.width))
+      canvas.width = img.width * scale
+      canvas.height = img.height * scale
+
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+      let imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      let data = imageData.data
+      
+      const grayArray = []
+      for (let i = 0; i < data.length; i += 4) {
+        const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+        grayArray.push(gray)
+        data[i] = data[i + 1] = data[i + 2] = gray
+      }
+
+      const claheData = applyCLAHE(grayArray, canvas.width, canvas.height)
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = data[i + 1] = data[i + 2] = claheData[i / 4]
+      }
+
+      let processed = morphClose(claheData, canvas.width, canvas.height, 2)
+      const threshold = computeOtsuThreshold(processed)
+      
+      for (let i = 0; i < processed.length; i++) {
+        processed[i] = processed[i] > threshold ? 255 : 0
+      }
+
+      let whiteCount = 0
+      for (let i = 0; i < processed.length; i++) {
+        if (processed[i] > 128) whiteCount++
+      }
+
+      if (whiteCount < processed.length * 0.3) {
+        for (let i = 0; i < processed.length; i++) {
+          processed[i] = 255 - processed[i]
+        }
+      }
+
+      processed = morphDilate(processed, canvas.width, canvas.height, 1)
+
+      for (let i = 0; i < data.length; i += 4) {
+        data[i] = data[i + 1] = data[i + 2] = processed[i / 4]
+        data[i + 3] = 255
+      }
+
+      ctx.putImageData(imageData, 0, 0)
+
+      const padded = document.createElement('canvas')
+      const pad = 15
+      padded.width = canvas.width + pad * 2
+      padded.height = canvas.height + pad * 2
+      const pctx = padded.getContext('2d')
+      pctx.fillStyle = 'white'
+      pctx.fillRect(0, 0, padded.width, padded.height)
+      pctx.drawImage(canvas, pad, pad)
+
+      padded.toBlob((blob) => {
+        URL.revokeObjectURL(url)
+        resolve(blob)
+      }, 'image/png')
+    }
+    img.src = url
+  })
+}
+
 async function generatePlateVariants(file) {
   return new Promise((resolve) => {
     const img = new Image()
@@ -296,21 +283,14 @@ async function generatePlateVariants(file) {
 
     img.onload = () => {
       const variants = []
-      
+      let done = 0
+      function check() { done++; if (done === 5) { URL.revokeObjectURL(url); resolve(variants) } }
+
       generateVariant(img, 0, 0, img.width, img.height, 1.8, 130, (blob) => { variants[0] = blob; check() })
       generateVariant(img, 0, 0, img.width, img.height, 2.5, 120, (blob) => { variants[1] = blob; check() })
       generateVariant(img, 0, 0, img.width, img.height, 3.0, 110, (blob) => { variants[2] = blob; check() })
       generateVariant(img, 0, img.height * 0.5, img.width, img.height * 0.5, 2.0, 125, (blob) => { variants[3] = blob; check() })
       generateVariant(img, img.width * 0.15, img.height * 0.4, img.width * 0.7, img.height * 0.5, 2.2, 115, (blob) => { variants[4] = blob; check() })
-
-      let done = 0
-      function check() {
-        done++
-        if (done === 5) {
-          URL.revokeObjectURL(url)
-          resolve(variants)
-        }
-      }
     }
     img.src = url
   })
@@ -341,7 +321,28 @@ function generateVariant(img, sx, sy, sw, sh, contrast, threshold, callback) {
   canvas.toBlob(callback, 'image/png')
 }
 
-// ==================== TEXT EXTRACTION DENGAN FORMAT SPASI ====================
+function levenshteinDistance(a, b) {
+  const dp = Array(b.length + 1).fill(0).map(() => Array(a.length + 1).fill(0))
+  for (let i = 0; i <= a.length; i++) dp[0][i] = i
+  for (let j = 0; j <= b.length; j++) dp[j][0] = j
+  for (let j = 1; j <= b.length; j++) {
+    for (let i = 1; i <= a.length; i++) {
+      if (a[i - 1] === b[j - 1]) {
+        dp[j][i] = dp[j - 1][i - 1]
+      } else {
+        dp[j][i] = Math.min(dp[j - 1][i - 1] + 1, dp[j - 1][i] + 1, dp[j][i - 1] + 1)
+      }
+    }
+  }
+  return dp[b.length][a.length]
+}
+
+function fuzzyMatchPrefix(input, validPrefixes, maxDistance = 1) {
+  for (const valid of validPrefixes) {
+    if (levenshteinDistance(input, valid) <= maxDistance) return valid
+  }
+  return null
+}
 
 function extractPlateFromText(text) {
   if (!text) return null
@@ -383,52 +384,24 @@ function extractPlateFromText(text) {
       if (numbers.length < 1 || numbers.length > 4 || suffix.length < 1 || suffix.length > 3) continue
 
       const isValid = validPrefixes[prefix] || fuzzyMatchPrefix(prefix, Object.keys(validPrefixes))
-
-      if (isValid) {
-        // ✅ RETURN STRING DENGAN FORMAT SPASI: "BK 7272 JT"
-        return `${prefix} ${numbers} ${suffix}`
-      }
+      if (isValid) return `${prefix} ${numbers} ${suffix}`
     }
   }
 
   // Fallback
   for (const pattern of patterns) {
     const match = pattern.exec(cleaned)
-    if (match) {
-      return `${match[1]} ${match[2]} ${match[3]}`
-    }
+    if (match) return `${match[1]} ${match[2]} ${match[3]}`
   }
-  
+
   return null
 }
 
-function fuzzyMatchPrefix(input, validPrefixes, maxDistance = 1) {
-  for (const valid of validPrefixes) {
-    if (levenshteinDistance(input, valid) <= maxDistance) return valid
-  }
-  
-  return null
-}
-
-function levenshteinDistance(a, b) {
-  const dp = Array(b.length + 1).fill(0).map(() => Array(a.length + 1).fill(0))
-  for (let i = 0; i <= a.length; i++) dp[0][i] = i
-  for (let j = 0; j <= b.length; j++) dp[j][0] = j
-
-  for (let j = 1; j <= b.length; j++) {
-    for (let i = 1; i <= a.length; i++) {
-      if (a[i - 1] === b[j - 1]) {
-        dp[j][i] = dp[j - 1][i - 1]
-      } else {
-        dp[j][i] = Math.min(dp[j - 1][i - 1] + 1, dp[j - 1][i] + 1, dp[j][i - 1] + 1)
-      }
-    }
-  }
-  return dp[b.length][a.length]
-}
-
+// ✅ KUNCI FIX: dynamic import — tesseract.js TIDAK ikut bundle saat "vite build"
+// Hanya di-load ke browser saat user benar-benar upload foto
 async function runOCRAdvanced(blob) {
   try {
+    const { default: Tesseract } = await import('tesseract.js') // ← INI YANG BEDA
     const result = await Tesseract.recognize(blob, 'eng', {
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -.',
       tessedit_pageseg_mode: '7',
@@ -441,8 +414,6 @@ async function runOCRAdvanced(blob) {
     return ''
   }
 }
-
-// ==================== MAIN FUNCTION - RETURN STRING ====================
 
 export async function detectPlateNumber(file, onProgress) {
   try {
@@ -468,19 +439,14 @@ export async function detectPlateNumber(file, onProgress) {
     onProgress?.(95)
     if (results.length === 0) return null
 
-    // Voting system
     const frequency = {}
     results.forEach(r => { frequency[r] = (frequency[r] ?? 0) + 1 })
     const best = Object.entries(frequency).sort((a, b) => b[1] - a[1])[0]
-    
+
     onProgress?.(100)
-    
-    // ✅ RETURN STRING (bukan object) agar compatible dengan UserUpload.jsx
-    return best[0]
+    return best[0] // ✅ Return string, bukan object
   } catch (err) {
     console.error('Plate detection error:', err)
     return null
   }
 }
-
-

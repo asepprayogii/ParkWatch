@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { logout } from '../../services/auth'
 import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
@@ -58,7 +58,7 @@ const navItems = [
 
 const formatBadge = (num) => (num > 99 ? '99+' : num > 0 ? num : null)
 
-// Style constants (sama persis seperti AdminSidebar)
+// Style constants
 const S = {
   sidebar: (collapsed, theme) => ({
     width: collapsed ? '64px' : '224px',
@@ -102,12 +102,29 @@ const S = {
 }
 
 export default function Sidebar({ onCollapse }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    // ✅ Load collapsed state from localStorage on mount
+    const saved = localStorage.getItem('sidebar-collapsed')
+    return saved ? JSON.parse(saved) : false
+  })
   const [hoveredItem, setHoveredItem] = useState(null)
   const [unread, setUnread] = useState(0)
   const navigate = useNavigate()
+  const location = useLocation() // ✅ Untuk persist state saat route berubah
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+
+  // ✅ Persist collapsed state to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(collapsed))
+    onCollapse?.(collapsed)
+  }, [collapsed, onCollapse])
+
+  // ✅ Pastikan collapsed state tetap saat pindah halaman
+  useEffect(() => {
+    // Tidak perlu reset collapsed saat route berubah
+    // State sudah persist via localStorage
+  }, [location])
 
   useEffect(() => {
     if (!user?.id) return
@@ -128,7 +145,7 @@ export default function Sidebar({ onCollapse }) {
   const handleToggle = () => {
     const next = !collapsed
     setCollapsed(next)
-    onCollapse?.(next)
+    // onCollapse dipanggil via useEffect di atas
   }
 
   const handleLogout = async () => {
@@ -138,6 +155,9 @@ export default function Sidebar({ onCollapse }) {
 
   const initials = user?.full_name?.charAt(0)?.toUpperCase() ?? 'U'
   const displayBadge = formatBadge(unread)
+  
+  // ✅ Avatar URL dengan fallback ke initials
+  const avatarUrl = user?.avatar_url || null
 
   return (
     <>
@@ -170,7 +190,7 @@ export default function Sidebar({ onCollapse }) {
           {!collapsed && (
             <div className="flex items-center gap-2 overflow-hidden">
               {/* ✅ LOGO DARI PUBLIC /logo.png */}
-              <img src="/logo.png" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
+              <img src="/logo.webp" alt="ParkWatch" className="w-8 h-8 object-contain shrink-0" />
               <div className="overflow-hidden">
                 <p className="font-bold text-sm leading-none tracking-tight"
                   style={{ color: theme === 'dark' ? '#fff' : '#0f172a' }}>
@@ -178,7 +198,7 @@ export default function Sidebar({ onCollapse }) {
                 </p>
                 <p className="text-xs leading-none mt-0.5"
                   style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', letterSpacing: '0.4px', textTransform: 'uppercase', fontSize: '9px' }}>
-                  User
+                  Pelapor
                 </p>
               </div>
             </div>
@@ -200,7 +220,7 @@ export default function Sidebar({ onCollapse }) {
           </button>
         </div>
 
-        {/* User Info */}
+        {/* User Info - ✅ Dengan Avatar */}
         <div
           className="px-3 py-3 flex items-center overflow-hidden"
           style={{
@@ -209,13 +229,34 @@ export default function Sidebar({ onCollapse }) {
             justifyContent: collapsed ? 'center' : 'flex-start',
           }}
         >
-          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={S.avatarRing}>
-            <span className="text-sm font-bold text-white">{initials}</span>
+          {/* ✅ Avatar dengan fallback initials */}
+          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 overflow-hidden" style={S.avatarRing}>
+            {avatarUrl ? (
+              <img 
+                src={avatarUrl} 
+                alt={user?.full_name || 'User'} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback ke initials jika gambar error
+                  e.target.style.display = 'none'
+                  e.target.nextSibling.style.display = 'flex'
+                }}
+              />
+            ) : null}
+            {/* Fallback initials (muncul jika no avatar atau error load) */}
+            <span 
+              className={`text-sm font-bold text-white ${avatarUrl ? '' : 'flex'}`} 
+              style={{ display: avatarUrl ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}
+            >
+              {initials}
+            </span>
           </div>
+          
+          {/* User info text - hanya muncul jika expanded */}
           {!collapsed && (
             <div className="overflow-hidden">
               <p className="text-xs font-bold truncate" style={{ color: theme === 'dark' ? '#fff' : '#0f172a' }}>
-                {user?.full_name ?? 'User'}
+                {user?.full_name ?? 'Pelapor'}
               </p>
               <p className="text-xs truncate"
                 style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.45)' : 'rgba(100,116,139,0.7)', fontSize: '10px' }}>

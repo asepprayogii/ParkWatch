@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { logout } from "../../services/auth";
 import { useAuth } from "../../store/AuthContext";
-import { useTheme } from "../../store/ThemeContext"; // ✅ Import useTheme
+import { useTheme } from "../../store/ThemeContext";
 import { getUnreadCount } from "../../services/notifications";
 import { supabase } from "../../lib/supabase";
 
@@ -56,12 +56,22 @@ const navItems = [
 ];
 
 export default function SatpamSidebar({ onCollapse }) {
-  const [collapsed, setCollapsed] = useState(false);
+  // ✅ Load collapsed state from localStorage
+  const [collapsed, setCollapsed] = useState(() => {
+    const saved = localStorage.getItem('satpam-sidebar-collapsed');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [hoveredItem, setHoveredItem] = useState(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { theme, toggleTheme } = useTheme(); // ✅ Ambil theme & toggle
+  const { theme } = useTheme();
   const [unread, setUnread] = useState(0);
+
+  // ✅ Persist collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('satpam-sidebar-collapsed', JSON.stringify(collapsed));
+    onCollapse?.(collapsed);
+  }, [collapsed, onCollapse]);
 
   useEffect(() => {
     if (!user) return;
@@ -77,9 +87,7 @@ export default function SatpamSidebar({ onCollapse }) {
   }, [user]);
 
   const handleToggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    onCollapse?.(next);
+    setCollapsed(prev => !prev);
   };
 
   const handleLogout = async () => {
@@ -92,51 +100,54 @@ export default function SatpamSidebar({ onCollapse }) {
     }
   };
 
+  const initials = user?.full_name?.charAt(0)?.toUpperCase() ?? "S";
+  const userAvatar = user?.avatar_url || null;
+
   return (
-    <aside className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white dark:bg-[#242C3B] border-r border-slate-200 dark:border-[#353F54] z-50 transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'}`}>
-      {/* Header */}
+    <aside className={`hidden md:flex flex-col fixed left-0 top-0 h-full bg-white dark:bg-[#242C3B] border-r border-slate-200 dark:border-[#353F54] z-[60] transition-all duration-300 ${collapsed ? 'w-16' : 'w-56'}`}>
+      
+      {/* Header - Logo + Toggle */}
       <div className={`flex items-center h-14 border-b border-slate-200 dark:border-[#353F54] px-3 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        
+        {/* ✅ Logo ParkWatch - HANYA MUNCUL SAAT EXPANDED */}
         {!collapsed && (
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
+          <div className="flex items-center gap-2 overflow-hidden">
+            <img src="/logo.webp" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
             <div>
               <p className="font-bold text-slate-800 dark:text-white text-sm leading-none">ParkWatch</p>
               <p className="text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wider mt-0.5">Satpam</p>
             </div>
           </div>
         )}
+
+        {/* ✅ Toggle Button - SELALU MUNCUL (di kanan) */}
         <button
           onClick={handleToggle}
-          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-[#353F54] text-slate-500 dark:text-slate-400 transition"
+          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 dark:hover:bg-[#353F54] text-slate-500 dark:text-slate-400 transition ml-auto"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
           ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
           )}
         </button>
       </div>
 
-      {/* User Info */}
-      {!collapsed && (
-        <div className="px-3 py-3 border-b border-slate-100 dark:border-[#353F54]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center shrink-0 border border-green-200 dark:border-green-800">
-              <span className="text-sm font-bold text-green-600 dark:text-green-400">{user?.full_name?.charAt(0).toUpperCase() ?? "S"}</span>
-            </div>
-            <div className="overflow-hidden">
-              <p className="text-xs font-bold text-slate-700 dark:text-slate-200 truncate">{user?.full_name ?? "Satpam"}</p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{user?.email ?? ""}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Navigation */}
       <nav className="flex-1 px-2 py-3 flex flex-col gap-1 overflow-y-auto">
         {navItems.map((item) => (
-          <div key={item.to} className="relative" onMouseEnter={() => setHoveredItem(item.to)} onMouseLeave={() => setHoveredItem(null)}>
+          <div 
+            key={item.to} 
+            className="relative" 
+            onMouseEnter={() => setHoveredItem(item.to)} 
+            onMouseLeave={() => setHoveredItem(null)}
+          >
             <NavLink
               to={item.to}
               title={collapsed ? item.label : ""}
@@ -144,9 +155,15 @@ export default function SatpamSidebar({ onCollapse }) {
                 `flex items-center gap-3 px-2 py-2.5 rounded-xl transition text-sm font-bold relative
                 ${collapsed ? 'justify-center' : ''}
                 ${isActive
-                  ? 'bg-green-600 text-white shadow-lg shadow-green-500/20'
+                  ? 'text-white shadow-lg'
                   : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353F54] hover:text-slate-900 dark:hover:text-white'}`
               }
+              style={({ isActive }) => ({
+                ...(isActive && {
+                  background: 'linear-gradient(135deg, rgba(24,95,165,0.9), rgba(6,182,212,0.8))',
+                  boxShadow: '0 0 18px rgba(6,182,212,0.15)',
+                }),
+              })}
             >
               <div className="relative shrink-0">
                 {item.icon}
@@ -168,37 +185,24 @@ export default function SatpamSidebar({ onCollapse }) {
         ))}
       </nav>
 
-      {/* ✅ Footer: Theme Toggle + Logout */}
+      {/* Footer: Logout Only */}
       <div className="px-2 py-3 border-t border-slate-100 dark:border-[#353F54] flex flex-col gap-1">
-        {/* Theme Toggle */}
-        <div className="relative" onMouseEnter={() => setHoveredItem('theme')} onMouseLeave={() => setHoveredItem(null)}>
+        <div className="relative" onMouseEnter={() => setHoveredItem('logout')} onMouseLeave={() => setHoveredItem(null)}>
           <button
-            onClick={toggleTheme}
-            title={collapsed ? (theme === 'dark' ? 'Mode Terang' : 'Mode Gelap') : ''}
-            className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold transition ${collapsed ? 'justify-center' : 'justify-start'} text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353F54] hover:text-slate-900 dark:hover:text-white`}
+            onClick={handleLogout}
+            title={collapsed ? "Keluar" : ""}
+            className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition ${collapsed ? 'justify-center' : ''}`}
+            aria-label="Logout"
           >
-            {theme === 'dark' ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-            )}
-            {!collapsed && <span>{theme === 'dark' ? 'Mode Terang' : 'Mode Gelap'}</span>}
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            {!collapsed && <span>Keluar</span>}
           </button>
-          {collapsed && hoveredItem === 'theme' && (
-            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-slate-900 dark:bg-[#1e293b] text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap z-50 pointer-events-none shadow-lg">{theme === 'dark' ? 'Terang' : 'Gelap'}</div>
+          {collapsed && hoveredItem === 'logout' && (
+            <div className="absolute left-12 top-1/2 -translate-y-1/2 bg-slate-900 dark:bg-[#1e293b] text-white text-xs px-2 py-1 rounded-lg whitespace-nowrap z-50 pointer-events-none shadow-lg" style={{ color: '#fc6363' }}>Keluar</div>
           )}
         </div>
-
-        {/* Logout Button */}
-        <button
-          onClick={handleLogout}
-          title={collapsed ? "Keluar" : ""}
-          className={`w-full flex items-center gap-3 px-2 py-2.5 rounded-xl text-sm font-bold text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition ${collapsed ? 'justify-center' : ''}`}
-          aria-label="Logout"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-          {!collapsed && <span>Keluar</span>}
-        </button>
       </div>
     </aside>
   );

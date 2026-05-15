@@ -331,8 +331,12 @@ export default function AdminLaporan() {
   };
 
   return (
-    <AdminLayout title="Monitoring Laporan">
+    <AdminLayout>
       <PageTransition>
+        <div className="mb-6">
+          <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">Daftar Laporan</h2>
+          <p className="text-slate-600 dark:text-slate-300 font-medium mt-2">Monitoring seluruh laporan pelanggaran parkir</p>
+        </div>
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex flex-wrap items-center gap-2">
             <select

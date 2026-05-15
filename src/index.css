@@ -6,3 +6,18 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   box-sizing: border-box;
 }
+
+body {
+  margin: 0;
+  background-color: #0f172a;
+  color: #f8fafc;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

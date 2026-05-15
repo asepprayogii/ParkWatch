@@ -1,11 +1,11 @@
-import { useEffect, useState, useMemo } from 'react'
+// src/pages/admin/AdminDashboard.jsx
+import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import AdminLayout from '../../components/layout/AdminLayout'
-import { useLocation } from 'react-router-dom'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, AreaChart, Area } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { MapContainer, TileLayer, Marker, Popup, Circle } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { Car, AlertTriangle, CheckCircle, Clock, MapPin, Activity, ShieldCheck, Map as MapIcon, Users, Hash, AlertOctagon, TrendingUp } from 'lucide-react'
+import { FileText, AlertTriangle, CheckCircle, Clock, MapPin, Activity, ShieldCheck, Map as MapIcon, Users, AlertOctagon, TrendingUp } from 'lucide-react'
 import L from 'leaflet'
 import clsx from 'clsx'
 import { twMerge } from 'tailwind-merge'
@@ -27,7 +27,7 @@ function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
 
-// Glassmorphism Component with high contrast for the palette
+// Glassmorphism Component
 function GlassCard({ children, className }) {
   return (
     <div className={cn(
@@ -147,7 +147,6 @@ export default function AdminDashboard() {
       })
       setTopReporters(Object.entries(reporterCount).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, count]) => ({ id, name: reporterNames[id] ?? 'Anonim', count })))
 
-      // Fetch zones with coordinates for the map
       const { data: zonesData } = await supabase
         .from('zones')
         .select('id, name, latitude, longitude, radius')
@@ -185,8 +184,9 @@ export default function AdminDashboard() {
   const mapCenter = [-7.1297312, 112.7242796]
 
   return (
-    <AdminLayout title="Ringkasan">
-      <div className="max-w-7xl mx-auto space-y-8 pb-10">
+    <AdminLayout>
+      {/* ✅ FIX: Ganti max-w-7xl mx-auto dengan w-full agar mengisi space saat sidebar collapsed */}
+      <div className="w-full space-y-8 pb-10">
         
         {/* Header Section */}
         <motion.div 
@@ -207,11 +207,11 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
 
-        {/* Stats Grid */}
+        {/* Stats Grid - Responsive */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             label="Total Laporan" value={stats.total} delay={0.1}
-            icon={<Car size={28} strokeWidth={2.5}/>} 
+            icon={<FileText size={28} strokeWidth={2.5} />} 
             colorClass="bg-[#4B4CED]" 
             gradientClass="bg-[#4B4CED]" 
           />
@@ -235,15 +235,15 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content Grid - Responsive */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
           
-          <div className="lg:col-span-2 space-y-8">
+          <div className="xl:col-span-2 space-y-8">
             
             {/* Map */}
             <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }}>
               <GlassCard className="p-8">
-                <SectionTitle icon={MapIcon}>Zona Parkir Universitas Trunodjoyo Madura</SectionTitle>
+                <SectionTitle icon={MapIcon}>Zona Parkir Universitas Trunojoyo Madura</SectionTitle>
                 <div className="h-[400px] w-full rounded-3xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] relative z-0">
                   <MapContainer center={mapCenter} zoom={17} scrollWheelZoom={false} className="h-full w-full">
                     <TileLayer

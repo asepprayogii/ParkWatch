@@ -1,6 +1,19 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
-})
+  optimizeDeps: {
+    exclude: ["tesseract.js"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Vite 8 wajib pakai function, bukan object
+        manualChunks: (id) => {
+          if (id.includes("tesseract.js")) return "tesseract";
+        },
+      },
+    },
+  },
+});

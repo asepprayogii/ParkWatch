@@ -1,71 +1,62 @@
 import { useState } from 'react'
-import { useTheme } from '../../store/ThemeContext'
-import Sidebar from './Sidebar'
+import UserSidebar from './UserSidebar'
 import BottomNav from './BottomNav'
-import Topbar from './Topbar'
-import PageTransition from '../ui/PageTransition'
+import UserTopbar from './UserTopbar'
 
-export default function UserLayout({ title, children }) {
-  const [collapsed, setCollapsed] = useState(false)
-  const { theme } = useTheme()
+export default function UserLayout({ children }) {
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('user-sidebar-collapsed') ?? 'false') } catch { return false }
+  })
+
+  const sidebarW = collapsed ? 64 : 224
 
   return (
     <div
-      className="min-h-screen transition-colors duration-300"
-      style={{
-        background: theme === 'dark' ? '#222834' : '#f8fafc',
-        color: theme === 'dark' ? '#e2e8f0' : '#0f172a',
-        fontFamily: "'Plus Jakarta Sans', sans-serif",
-      }}
+      className="min-h-screen bg-slate-50 dark:bg-[#222834] transition-colors duration-300 text-slate-900 dark:text-slate-100"
+      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
     >
-      {/* Sidebar — desktop only */}
-      <Sidebar onCollapse={setCollapsed} />
+      {/* ── Topbar — selalu ada (z-50), sidebar akan menimpa bagian kirinya (z-60) ── */}
+      <UserTopbar />
 
-      {/* Topbar — mobile only */}
-      <div className="md:hidden">
-        <Topbar title={title} />
-      </div>
+      {/* ── Sidebar — desktop only (z-60 menimpa topbar di area kiri) ── */}
+      <UserSidebar onCollapse={setCollapsed} />
 
-      {/* Main Content */}
+      {/* ── Main Content ── */}
       <main
-        className="transition-all duration-300 ease-in-out pt-14 pb-24 px-4 md:pt-8 md:pb-8 md:px-6"
-        style={{ marginLeft: 0 }}
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          paddingTop: 56,    // tinggi topbar
+          paddingBottom: 80, // ruang bottomnav mobile
+          paddingLeft: 16,
+          paddingRight: 16,
+        }}
       >
         <style>{`
-          @media (min-width: 768px) {
-            .user-main { margin-left: ${collapsed ? '64px' : '224px'}; }
+          .user-content-wrap {
+            padding-top: 16px;  /* mobile: sama dengan padding kiri/kanan */
+            transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
           }
-          .user-main { transition: margin-left 0.3s cubic-bezier(.4,0,.2,1); }
+          /* Desktop: geser konten ke kanan sesuai lebar sidebar */
+          @media (min-width: 768px) {
+            .user-content-wrap {
+              margin-left: ${sidebarW}px;
+              padding-top: 24px;  /* desktop: sama dengan padding kiri */
+              padding-bottom: 24px;
+              padding-left: 24px;
+              padding-right: 24px;
+            }
+          }
         `}</style>
 
-        <div className="user-main max-w-5xl mx-auto">
-          {/* Desktop page title */}
-          <div className="hidden md:flex items-start justify-between mb-6">
-            <div>
-              <h1
-                className="text-xl font-bold transition-colors duration-300"
-                style={{
-                  color: theme === 'dark' ? '#fff' : '#0f172a',
-                  letterSpacing: '-0.4px',
-                }}
-              >
-                {title}
-              </h1>
-              <div
-                className="mt-1.5 h-0.5 w-10 rounded-full"
-                style={{ background: 'linear-gradient(90deg, #185FA5, #22D3EE)' }}
-              />
-            </div>
-          </div>
-
-          <PageTransition>
-            {children}
-          </PageTransition>
+        <div className="user-content-wrap">
+          {children}
         </div>
       </main>
 
-      {/* Bottom Nav — mobile only */}
-      <BottomNav />
+      {/* ── Bottom Nav — mobile only ── */}
+      <div className="md:hidden">
+        <BottomNav />
+      </div>
     </div>
   )
 }

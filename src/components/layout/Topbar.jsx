@@ -32,7 +32,11 @@ export default function Topbar({ title }) {
         .pw-user-topbar { 
           background: ${theme === 'dark' ? '#242C3B' : '#FFFFFF'}; 
           border-bottom: 1px solid ${theme === 'dark' ? '#353F54' : '#E2E8F0'}; 
-          font-family: 'Plus Jakarta Sans', sans-serif; 
+          font-family: 'Plus Jakarta Sans', sans-serif;
+          /* ✅ Fix untuk fixed positioning di mobile */
+          will-change: transform;
+          transform: translateZ(0);
+          -webkit-transform: translateZ(0);
         } 
         .pw-user-topbar::after { 
           content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; 
@@ -42,26 +46,37 @@ export default function Topbar({ title }) {
           0%,100% { box-shadow: 0 0 6px rgba(239,68,68,0.4); } 
           50% { box-shadow: 0 0 12px rgba(239,68,68,0.7); } 
         }
+        /* ✅ Mencegah body scroll bermasalah dengan fixed element */
+        html, body {
+          overscroll-behavior-y: none;
+        }
       `}</style>
 
-      <div className="pw-user-topbar fixed top-0 left-0 right-0 z-50 px-4 h-14 flex items-center justify-between relative">
+      {/* ✅ Topbar dengan fixed positioning yang benar */}
+      <div 
+        className="pw-user-topbar fixed top-0 left-0 right-0 z-[9999] h-14 flex items-center justify-between px-4"
+        style={{
+          // ✅ Hardware acceleration untuk fixed positioning
+          willChange: 'transform',
+          transform: 'translateZ(0)',
+          WebkitTransform: 'translateZ(0)',
+        }}
+      >
         
-        {/* ✅ Logo + Label User (TETAP ADA) */}
+        {/* ✅ Logo + Label User */}
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
+          <img src="/logo.webp" alt="ParkWatch" className="w-7 h-7 object-contain shrink-0" />
           <div>
             <p className="font-bold text-sm leading-none" style={{ color: theme === 'dark' ? '#fff' : '#0f172a', letterSpacing: '-0.3px' }}>
               ParkWatch
             </p>
             <p className="leading-none mt-0.5" style={{ color: theme === 'dark' ? 'rgba(176,210,255,0.5)' : 'rgba(100,116,139,0.7)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              User
+              Pelapor
             </p>
           </div>
         </div>
 
-        {/* ❌ Title tengah DIHAPUS (tidak lagi dirender) */}
-
-        {/* Actions */}
+        {/* ✅ Actions */}
         <div className="flex items-center gap-2">
           {/* Theme toggle */}
           <button
