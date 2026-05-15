@@ -36,10 +36,19 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-slate-500">Memuat...</p>
+      <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center">
+        <div className="relative">
+          {/* Logo Animation */}
+          <div className="w-20 h-20 mb-8 relative">
+            <div className="absolute inset-0 bg-blue-500 rounded-2xl blur-xl opacity-20 animate-pulse" />
+            <img src="/logo.png" alt="ParkWatch" className="w-full h-full object-contain relative z-10" />
+          </div>
+          
+          {/* Loading Spinner */}
+          <div className="absolute -bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.2em]">Memuat Sistem</p>
+          </div>
         </div>
       </div>
     );
