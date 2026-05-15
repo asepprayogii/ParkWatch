@@ -141,9 +141,13 @@ function ReportDetailModal({ report, onClose, currentUser }) {
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto p-6 pt-2 space-y-6 overscroll-contain">
             {report.photo_url && (
-              <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg">
-                <img src={report.photo_url} alt="Bukti laporan" className="w-full aspect-video md:aspect-[4/3] md:max-h-[340px] object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative group rounded-2xl overflow-hidden border-4 border-slate-100 dark:border-[#353F54] shadow-lg bg-slate-100 dark:bg-[#1a1f2e]">
+                <img 
+                  src={report.photo_url} 
+                  alt="Bukti laporan" 
+                  className="w-full h-auto max-h-[500px] object-contain mx-auto" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               </div>
             )}
 
@@ -249,7 +253,7 @@ function ReportCard({ report, onClick, onPhotoClick, currentUser }) {
   return (
     <GlassCard hover={true} className="cursor-pointer group" onClick={() => onClick(report)}>
       {report.photo_url && (
-        <div className="relative aspect-video md:aspect-[4/3] md:max-h-[260px] overflow-hidden">
+        <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-[#1a1f2e]">
           <img
             src={report.photo_url}
             alt={`Foto kendaraan dengan plat ${report.plate_number}`}
