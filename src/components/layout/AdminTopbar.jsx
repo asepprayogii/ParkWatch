@@ -1,9 +1,21 @@
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../store/AuthContext'
 import { useTheme } from '../../store/ThemeContext'
+import { logout } from '../../services/auth'
 
 export default function AdminTopbar() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const navigate = useNavigate()
+
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate('/login')
+    } catch (err) {
+      console.error('Logout failed:', err)
+    }
+  }
 
   const initials = (user?.full_name?.charAt(0) || 'A').toUpperCase()
   const isDark = theme === 'dark'
@@ -36,6 +48,7 @@ export default function AdminTopbar() {
           transition: background 0.15s;
         }
         .pw-icon-btn:hover { background: ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}; }
+        .pw-logout-btn:hover { background: rgba(239,68,68,0.08) !important; }
       `}</style>
 
       <div className="pw-adm-topbar px-4 justify-between">
@@ -56,6 +69,17 @@ export default function AdminTopbar() {
 
         {/* ══ KANAN: Actions (mobile & desktop) ══ */}
         <div className="flex items-center gap-2">
+
+          {/* Logout (Mobile) */}
+          <button 
+            className="pw-icon-btn pw-logout-btn md:hidden" 
+            onClick={handleLogout} 
+            title="Keluar"
+          >
+            <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </button>
 
           {/* Theme toggle */}
           <button className="pw-icon-btn" onClick={toggleTheme} title={isDark ? 'Mode Terang' : 'Mode Gelap'}>
