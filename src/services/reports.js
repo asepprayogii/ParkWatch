@@ -89,7 +89,10 @@ export function formatPhoneNumber(phone) {
 
 // Format tanggal Indonesia
 function formatDateIndo(dateString) {
-  const date = new Date(dateString)
+  if (!dateString) return "-"
+  const parsedDate = typeof dateString === 'string' && !dateString.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateString)
+    ? new Date(dateString.trim() + 'Z')
+    : new Date(dateString);
   const options = { 
     day: 'numeric', 
     month: 'long', 
@@ -97,7 +100,7 @@ function formatDateIndo(dateString) {
     hour: '2-digit',
     minute: '2-digit'
   }
-  return date.toLocaleDateString('id-ID', options)
+  return parsedDate.toLocaleDateString('id-ID', options)
 }
 
 // Kirim notifikasi WhatsApp via Edge Function

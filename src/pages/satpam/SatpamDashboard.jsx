@@ -15,7 +15,11 @@ function cn(...inputs) {
 }
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (!dateStr) return "-";
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  const diff = Math.floor((Date.now() - parsedDate) / 1000);
   if (diff < 60) return `${diff} dtk lalu`;
   if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
@@ -29,7 +33,11 @@ function sensorName(name) {
 }
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+  if (!dateStr) return "-";
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  return parsedDate.toLocaleDateString("id-ID", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
@@ -514,12 +522,16 @@ export default function SatpamDashboard() {
           minute: '2-digit'
         });
 
+        const laporDate = typeof evidenceModal.created_at === 'string' && !evidenceModal.created_at.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(evidenceModal.created_at)
+          ? new Date(evidenceModal.created_at.trim() + 'Z')
+          : new Date(evidenceModal.created_at);
+
         const message = `✅ *Laporan Selesai*\n\n` +
           `Halo ${evidenceModal.users?.full_name || "Pelapor"}!\n` +
           `Laporan Anda telah *selesai ditangani*.\n\n` +
           `🚗 Plat Nomor: ${evidenceModal.plate_number}\n` +
           `📍 Zona: ${evidenceModal.zones?.name || 'Zona'}\n` +
-          `📅 Tanggal Lapor: ${new Date(evidenceModal.created_at).toLocaleString('id-ID')}\n` +
+          `📅 Tanggal Lapor: ${laporDate.toLocaleString('id-ID')}\n` +
           `✅ Tanggal Selesai: ${processedDate}\n\n` +
           `Terima kasih telah melaporkan pelanggaran parkir.\n` +
           `Parkiran Anda kini sudah lebih tertib! 🚗✨`;
