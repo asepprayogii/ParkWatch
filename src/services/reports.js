@@ -125,61 +125,75 @@ export async function sendWhatsAppNotification({ phone, message }) {
   }
 }
 
-// Ambil nomor WA satpam aktif di zona & shift tertentu + info zona
-export async function getActiveSatpamPhone(zoneId, shift) {
+// Ambil semua nomor WA satpam yang terdaftar di zona + info zona
+// FIX: Ambil SEMUA satpam di zona (bukan limit 1), kembalikan array
+export async function getActiveSatpamPhones(zoneId) {
   try {
-    console.log('🔍 [DEBUG] Query roster:', { zoneId, shift })
+    console.log('🔍 [DEBUG] Query roster untuk zoneId:', zoneId)
 
-    // 1. Ambil roster aktif
+    // 1. Ambil semua satpam yang terdaftar di zona ini (tanpa limit)
     const { data: rosterData, error: rosterError } = await supabase
       .from('roster')
       .select('satpam_id')
       .eq('zone_id', zoneId)
-      .eq('shift', shift.toLowerCase())
-      .eq('is_active', true)
-      .limit(1)
 
     if (rosterError) {
       console.error('❌ Roster query error:', rosterError)
-      return null
+      return []
     }
 
     console.log('📦 [DEBUG] Roster result:', rosterData)
 
     if (!rosterData || rosterData.length === 0) {
-      console.warn('⚠️ Tidak ada roster aktif. Cek: zone_id, shift, is_active')
-      return null
+      console.warn('⚠️ Tidak ada satpam di zona ini:', zoneId)
+      return []
     }
 
-    const satpamId = rosterData[0].satpam_id
+    // 2. Deduplikasi satpam_id
+    const uniqueSatpamIds = [...new Set(rosterData.map(r => r.satpam_id))]
 
-    // 2. Ambil data satpam + nama zona
-    const { data: userData, error: userError } = await supabase
+    // 3. Ambil data semua satpam sekaligus
+    const { data: usersData, error: userError } = await supabase
       .from('users')
-      .select('phone, full_name')
-      .eq('id', satpamId)
-      .single()
+      .select('id, phone, full_name')
+      .in('id', uniqueSatpamIds)
 
+    if (userError) {
+      console.error('❌ Users query error:', userError)
+      return []
+    }
+
+    // 4. Ambil nama zona
     const { data: zoneData } = await supabase
       .from('zones')
       .select('name')
       .eq('id', zoneId)
       .single()
 
-    if (userError || !userData?.phone) {
-      console.warn('⚠️ Satpam phone not found:', { satpamId, userError })
-      return null
-    }
+    const zoneName = zoneData?.name || 'Zona Tidak Diketahui'
 
-    return { 
-      phone: userData.phone, 
-      name: userData.full_name,
-      zoneName: zoneData?.name || 'Zona Tidak Diketahui'
-    }
+    // 5. Filter hanya yang punya nomor HP, return array
+    const result = usersData
+      .filter(u => u.phone)
+      .map(u => ({
+        phone: u.phone,
+        name: u.full_name,
+        zoneName,
+      }))
+
+    console.log(`✅ [DEBUG] Satpam dengan nomor WA: ${result.length} dari ${uniqueSatpamIds.length} satpam`)
+    return result
+
   } catch (err) {
-    console.error('❌ Error getting satpam phone:', err)
-    return null
+    console.error('❌ Error getting satpam phones:', err)
+    return []
   }
+}
+
+// Keep backward compat (tidak dipakai lagi tapi jaga-jaga)
+export async function getActiveSatpamPhone(zoneId) {
+  const list = await getActiveSatpamPhones(zoneId)
+  return list[0] ?? null
 }
 
 // Ambil info lengkap report + user + zona
@@ -225,11 +239,12 @@ export function getCurrentShift() {
   return 'malam'
 }
 
-// ✅ MODIFIKASI: Create report + kirim WA ke satpam
+// ✅ Create report + kirim WA ke SEMUA satpam di zona
 export async function createReportWithNotification({ user_id, plate_number, zone_id, photo_url, description }) {
   try {
     console.log('📝 [DEBUG] Mulai createReportWithNotification')
 
+    // 1. Buat laporan
     const report = await createReport({
       user_id,
       plate_number,
@@ -237,34 +252,37 @@ export async function createReportWithNotification({ user_id, plate_number, zone
       photo_url,
       description,
     })
-
     console.log('✅ [DEBUG] Report created:', report.id)
 
-    const currentShift = getCurrentShift()
-    console.log('🕐 [DEBUG] Shift saat ini:', currentShift)
-
-    const satpamInfo = await getActiveSatpamPhone(zone_id, currentShift)
-    console.log('👮 [DEBUG] Data satpam ditemukan:', satpamInfo)
-
-    // ✅ Kirim notifikasi in-app ke satpam yang bertugas di zona ini
+    // 2. Kirim notifikasi in-app ke semua satpam di zona (tidak perlu await, fire and forget)
     sendNotificationToSatpam({
       zoneId: zone_id,
       reportId: report.id,
       plateNumber: plate_number,
     }).catch(err => console.error('Failed to send in-app notif to satpam:', err))
 
-    if (satpamInfo?.phone) {
-      // Ambil info user yang lapor
-      const { data: userData } = await supabase
-        .from('users')
-        .select('full_name')
-        .eq('id', user_id)
-        .single()
+    // 3. Ambil info user yang lapor
+    const { data: userData } = await supabase
+      .from('users')
+      .select('full_name')
+      .eq('id', user_id)
+      .single()
 
-      const userName = userData?.full_name || 'Pelapor'
-      const reportDate = formatDateIndo(report.created_at)
+    const userName = userData?.full_name || 'Pelapor'
+    const reportDate = formatDateIndo(report.created_at)
 
-      const message = `🚨 *Laporan Baru ParkWatch*\n\n` +
+    // 4. Ambil SEMUA satpam yang bertugas di zona ini
+    const satpamList = await getActiveSatpamPhones(zone_id)
+    console.log(`👮 [DEBUG] Jumlah satpam di zona: ${satpamList.length}`)
+
+    if (satpamList.length === 0) {
+      console.warn('⚠️ Tidak ada satpam dengan nomor WA di zona ini')
+    }
+
+    // 5. Kirim WA ke semua satpam secara paralel
+    const waPromises = satpamList.map(satpamInfo => {
+      const message =
+        `🚨 *Laporan Baru ParkWatch*\n\n` +
         `👤 Pelapor: ${userName}\n` +
         `🚗 Plat Nomor: ${plate_number || '-'}\n` +
         `📍 Zona: ${satpamInfo.zoneName}\n` +
@@ -272,16 +290,13 @@ export async function createReportWithNotification({ user_id, plate_number, zone
         `📝 Keterangan: ${description || '-'}\n\n` +
         `Silakan ditindaklanjuti.`
 
-      console.log('📤 [DEBUG] Mencoba kirim WA ke:', satpamInfo.phone)
-      
-      // Fire-and-forget (jangan await agar UI tidak waiting)
-      sendWhatsAppNotification({
-        phone: satpamInfo.phone,
-        message,
-      }).catch(err => console.error('Failed to send WA to satpam:', err))
-    } else {
-      console.warn('⚠️ Tidak ada satpam aktif untuk zona ini')
-    }
+      console.log('📤 [DEBUG] Kirim WA ke satpam:', satpamInfo.phone, '(' + satpamInfo.name + ')')
+      return sendWhatsAppNotification({ phone: satpamInfo.phone, message })
+        .catch(err => console.error('Failed to send WA to', satpamInfo.phone, ':', err))
+    })
+
+    // Tunggu semua WA terkirim sebelum return (mencegah request dibatalkan browser)
+    await Promise.allSettled(waPromises)
 
     return report
   } catch (err) {
@@ -329,7 +344,7 @@ export async function updateReportStatusWithNotification(reportId, status) {
 
       if (message) {
         console.log('📤 [DEBUG] Mencoba kirim WA ke user:', reportInfo.userPhone)
-        sendWhatsAppNotification({
+        await sendWhatsAppNotification({
           phone: reportInfo.userPhone,
           message,
         }).catch(err => console.error('Failed to send WA to user:', err))

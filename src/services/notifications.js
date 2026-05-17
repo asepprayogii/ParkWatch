@@ -68,7 +68,6 @@ export async function sendNotificationToSatpam({ zoneId, reportId, plateNumber }
       .from('roster')
       .select('satpam_id')
       .eq('zone_id', zoneId)
-      .eq('is_active', true)
 
     if (error) throw error
     if (!roster || roster.length === 0) {
