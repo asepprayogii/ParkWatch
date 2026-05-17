@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../store/AuthContext";
 import { supabase } from "../../lib/supabase";
 import { updateReportStatusWithNotification } from "../../services/reports";
+import { sendNotificationToUser } from "../../services/notifications";
 import SatpamLayout from "../../components/layout/SatpamLayout";
 import { MapPin, Clock, X, AlertTriangle, Activity, CheckCircle, Camera, Image, FileText, Send, ShieldCheck, ZoomIn } from "lucide-react";
 import clsx from "clsx";
@@ -511,6 +512,16 @@ export default function SatpamDashboard() {
         .eq("id", evidenceModal.id);
 
       if (updateError) throw updateError;
+
+      // ✅ KIRIM IN-APP NOTIFIKASI KE USER
+      if (evidenceModal.user_id) {
+        await sendNotificationToUser({
+          userId: evidenceModal.user_id,
+          reportId: evidenceModal.id,
+          plateNumber: evidenceModal.plate_number,
+          status: "resolved",
+        }).catch((err) => console.error("In-app Notif Error:", err));
+      }
 
       // ✅ KIRIM WA NOTIFIKASI KE USER
       if (evidenceModal.users?.phone) {

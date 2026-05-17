@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase'
-import { sendNotificationToSatpam } from './notifications'
+import { sendNotificationToSatpam, sendNotificationToUser } from './notifications'
 
 // Ambil semua laporan + info user + zona
 export async function getReports({ zoneId = null } = {}) {
@@ -219,6 +219,7 @@ export async function getReportInfo(reportId) {
 
     return {
       id: data.id,
+      userId: data.user_id,
       plateNumber: data.plate_number,
       zoneName: data.zones?.name || 'Zona Tidak Diketahui',
       userName: data.users?.full_name || 'Pelapor',
@@ -319,6 +320,16 @@ export async function updateReportStatusWithNotification(reportId, status) {
     // Ambil info lengkap report
     const reportInfo = await getReportInfo(reportId)
     console.log('👤 [DEBUG] Report info:', reportInfo)
+
+    // Kirim notifikasi in-app ke user
+    if (reportInfo?.userId) {
+      await sendNotificationToUser({
+        userId: reportInfo.userId,
+        reportId: reportInfo.id,
+        plateNumber: reportInfo.plateNumber,
+        status: status,
+      }).catch(err => console.error('Failed to send in-app notif to user:', err))
+    }
 
     if (reportInfo?.userPhone) {
       let message = ''
