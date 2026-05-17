@@ -48,7 +48,11 @@ const statusConfig = {
 }
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+  if (!dateStr) return "-"
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  const diff = Math.floor((Date.now() - parsedDate) / 1000)
   if (diff < 60) return `${diff} dtk lalu`
   if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`
   if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`
@@ -57,14 +61,21 @@ function timeAgo(dateStr) {
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('id-ID', {
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  return parsedDate.toLocaleString('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   })
 }
 
 function formatDate(dateStr) {
-  return new Date(dateStr).toLocaleDateString('id-ID', {
+  if (!dateStr) return "-"
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  return parsedDate.toLocaleDateString('id-ID', {
     day: 'numeric', month: 'short', year: 'numeric'
   })
 }

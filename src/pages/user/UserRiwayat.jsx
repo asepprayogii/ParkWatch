@@ -23,7 +23,11 @@ const statusConfig = {
 const EDIT_TIME_LIMIT = 15 * 60 * 1000
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000)
+  if (!dateStr) return "-"
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  const diff = Math.floor((Date.now() - parsedDate) / 1000)
   if (diff < 60) return `${diff} dtk lalu`
   if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`
   if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`
@@ -31,11 +35,19 @@ function timeAgo(dateStr) {
 }
 
 function canEdit(createdAt) {
-  return Date.now() - new Date(createdAt).getTime() < EDIT_TIME_LIMIT
+  if (!createdAt) return false;
+  const parsedDate = typeof createdAt === 'string' && !createdAt.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(createdAt)
+    ? new Date(createdAt.trim() + 'Z')
+    : new Date(createdAt);
+  return Date.now() - parsedDate.getTime() < EDIT_TIME_LIMIT
 }
 
 function timeLeftToEdit(createdAt) {
-  const elapsed = Date.now() - new Date(createdAt).getTime()
+  if (!createdAt) return null;
+  const parsedDate = typeof createdAt === 'string' && !createdAt.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(createdAt)
+    ? new Date(createdAt.trim() + 'Z')
+    : new Date(createdAt);
+  const elapsed = Date.now() - parsedDate.getTime()
   const remaining = EDIT_TIME_LIMIT - elapsed
   if (remaining <= 0) return null
   const mins = Math.floor(remaining / 60000)
