@@ -59,7 +59,10 @@ const statusConfig = {
 function timeAgo(dateStr) {
   try {
     if (!dateStr) return "-";
-    const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+    const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+      ? new Date(dateStr.trim() + 'Z')
+      : new Date(dateStr);
+    const diff = Math.floor((Date.now() - parsedDate) / 1000);
     if (isNaN(diff)) return "-";
     if (diff < 60) return `${diff} dtk lalu`;
     if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`;
@@ -250,7 +253,12 @@ export default function AdminLaporan() {
                 </div>
                 <div>
                   <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Waktu Laporan</p>
-                  <p className="text-sm font-bold">{new Date(selectedReport.created_at).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                  <p className="text-sm font-bold">
+                    {(typeof selectedReport.created_at === 'string' && !selectedReport.created_at.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(selectedReport.created_at)
+                      ? new Date(selectedReport.created_at.trim() + 'Z')
+                      : new Date(selectedReport.created_at)
+                    ).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
               </div>
 
