@@ -14,7 +14,11 @@ function cn(...inputs) {
 }
 
 function timeAgo(dateStr) {
-  const diff = Math.floor((Date.now() - new Date(dateStr)) / 1000);
+  if (!dateStr) return "-";
+  const parsedDate = typeof dateStr === 'string' && !dateStr.endsWith('Z') && !/[\+\-]\d{2}:?\d{2}$/.test(dateStr)
+    ? new Date(dateStr.trim() + 'Z')
+    : new Date(dateStr);
+  const diff = Math.floor((Date.now() - parsedDate) / 1000);
   if (diff < 60) return `${diff} dtk lalu`;
   if (diff < 3600) return `${Math.floor(diff / 60)} mnt lalu`;
   if (diff < 86400) return `${Math.floor(diff / 3600)} jam lalu`;
